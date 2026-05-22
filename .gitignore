@@ -1,5 +1,8 @@
 __pycache__/
 *.pyc
+build/
+dist/
+*.spec.bak
 chief_of_staff_config.json
 chief_of_staff_history/
 *.json

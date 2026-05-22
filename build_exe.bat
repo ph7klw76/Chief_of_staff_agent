@@ -18,28 +18,28 @@ echo [1/3] Installing PyInstaller...
 pip install pyinstaller --quiet --disable-pip-version-check
 
 echo.
-echo [2/3] Building GUI application ^(ChiefOfStaff.exe^)...
-pyinstaller chief_of_staff_gui.spec --noconfirm --clean --distpath dist 2>&1
+echo [2/3] Building GUI application (ChiefOfStaff.exe)...
+python -m PyInstaller chief_of_staff_gui.spec --noconfirm --clean --distpath dist 2>&1
 if %errorlevel% neq 0 (
-    echo WARNING: GUI build had issues. Trying direct build...
-    pyinstaller --onefile --windowed --name ChiefOfStaff chief_of_staff_gui.py 2>&1
+    echo WARNING: GUI build via spec failed. Trying direct build...
+    python -m PyInstaller --onefile --windowed --name ChiefOfStaff chief_of_staff_gui.py 2>&1
 )
 if exist dist\ChiefOfStaff.exe (
-    echo   >> dist\ChiefOfStaff.exe built successfully!
+    echo   ^>^> dist\ChiefOfStaff.exe built successfully!
     for %%f in (dist\ChiefOfStaff.exe) do echo   Size: %%~zf bytes
 ) else (
     echo   GUI build failed. Check errors above.
 )
 
 echo.
-echo [3/3] Building CLI application ^(ChiefOfStaff-CLI.exe^)...
-pyinstaller chief_of_staff_cli.spec --noconfirm --clean --distpath dist 2>&1
+echo [3/3] Building CLI application (ChiefOfStaff-CLI.exe)...
+python -m PyInstaller chief_of_staff_cli.spec --noconfirm --clean --distpath dist 2>&1
 if %errorlevel% neq 0 (
-    echo WARNING: CLI build had issues. Trying direct build...
-    pyinstaller --onefile --console --name ChiefOfStaff-CLI chief_of_staff_agent.py 2>&1
+    echo WARNING: CLI build via spec failed. Trying direct build...
+    python -m PyInstaller --onefile --console --name ChiefOfStaff-CLI chief_of_staff_agent.py 2>&1
 )
 if exist dist\ChiefOfStaff-CLI.exe (
-    echo   >> dist\ChiefOfStaff-CLI.exe built successfully!
+    echo   ^>^> dist\ChiefOfStaff-CLI.exe built successfully!
     for %%f in (dist\ChiefOfStaff-CLI.exe) do echo   Size: %%~zf bytes
 ) else (
     echo   CLI build failed. Check errors above.
