@@ -9,6 +9,7 @@ from typing import Optional
 from collections import defaultdict
 
 SCHEMA_VERSION = "6.0"
+CURRENT_SCHEMA_VERSION = "7.0"
 STRATEGIC_GOALS = ["research_publication","grant_funding","industry_collaboration","teaching_excellence","public_influence","deeptech_venture","admin_maintenance"]
 PROJECT_CATEGORIES = ["research_project","grant_proposal","industry_collaboration","teaching_project","public_influence","deeptech_venture","personal_system"]
 OPPORTUNITY_TYPES = ["grant","collaboration","industry_partner","paper","conference","student_project","startup_idea","media_visibility","teaching_innovation"]
@@ -37,6 +38,37 @@ OUTCOMES_PATH = Path("chief_of_staff_outcomes.json"); EVIDENCE_PATH = Path("chie
 ASSUMPTIONS_PATH = Path("chief_of_staff_assumptions.json"); PREDICTIONS_PATH = Path("chief_of_staff_predictions.json")
 HYPOTHESES_PATH = Path("chief_of_staff_hypotheses.json"); ASSETS_PATH = Path("chief_of_staff_assets.json")
 DOCTRINE_PATH = Path("chief_of_staff_doctrine.json")
+IDENTITY_PATH = Path("chief_of_staff_identity.json")
+CAPITAL_PATH = Path("chief_of_staff_capital.json")
+RHYTHM_PATH = Path("chief_of_staff_rhythm.json")
+OKRS_PATH = Path("chief_of_staff_okrs.json")
+AUDIT_PATH = Path("chief_of_staff_audit.json")
+
+# V7 constants
+CAPITAL_TYPES = ["intellectual_capital","relationship_capital","reputation_capital","financial_capital","technical_capital","teaching_capital","institutional_capital","entrepreneurial_capital","energy_capital"]
+SCENARIO_PATHS = ["research_first","grant_first","industry_first","teaching_first","public_influence_first","deeptech_venture_first","balanced","admin_reactive"]
+SCENARIO_LABELS = {"research_first":"Research-First Path","grant_first":"Grant-First Path","industry_first":"Industry-Collaboration-First Path","teaching_first":"Teaching-Excellence-First Path","public_influence_first":"Public-Influence-First Path","deeptech_venture_first":"Deep-Tech-Venture-First Path","balanced":"Balanced Path","admin_reactive":"Admin-Reactive Path"}
+SCENARIO_GOAL_FOCUS = {"research_first":"research_publication","grant_first":"grant_funding","industry_first":"industry_collaboration","teaching_first":"teaching_excellence","public_influence_first":"public_influence","deeptech_venture_first":"deeptech_venture","balanced":"balanced","admin_reactive":"admin_maintenance"}
+DEFAULT_RHYTHMS = [
+    {"rhythm_id":"r_daily_priorities","name":"Daily priorities","cadence":"daily","strategic_goal":"all","description":"Choose top 1-3 strategic tasks and protect first deep-work block.","trigger":"start of day","expected_output":"Ranked DO list","status":"active"},
+    {"rhythm_id":"r_daily_evidence","name":"Daily evidence/reflection","cadence":"daily","strategic_goal":"all","description":"Record one evidence item or reflection.","trigger":"end of day","expected_output":"Evidence or reflection entry","status":"active"},
+    {"rhythm_id":"r_weekly_delayed","name":"Weekly delayed review","cadence":"weekly","strategic_goal":"all","description":"Review delayed high-value tasks. Check admin percentage.","trigger":"Friday afternoon","expected_output":"Delay audit + admin % check","status":"active"},
+    {"rhythm_id":"r_weekly_opps","name":"Weekly opportunity & relationship review","cadence":"weekly","strategic_goal":"all","description":"Review opportunities and relationships.","trigger":"Friday afternoon","expected_output":"Stale opportunity list, relationship follow-ups","status":"active"},
+    {"rhythm_id":"r_monthly_allocation","name":"Monthly strategic allocation review","cadence":"monthly","strategic_goal":"all","description":"Review strategic allocation vs baseline. Update project statuses.","trigger":"first of month","expected_output":"Allocation audit + project status update","status":"active"},
+    {"rhythm_id":"r_monthly_predictions","name":"Monthly prediction & assumption review","cadence":"monthly","strategic_goal":"all","description":"Review predictions and assumptions.","trigger":"first of month","expected_output":"Calibration check + assumption review","status":"active"},
+    {"rhythm_id":"r_quarterly_rebalance","name":"Quarterly strategic rebalance","cadence":"quarterly","strategic_goal":"all","description":"Rebalance strategic goals. Kill or pause stale projects. Update doctrine.","trigger":"quarter start","expected_output":"Rebalance recommendation + kill-list","status":"active"},
+    {"rhythm_id":"r_yearly_identity","name":"Yearly identity & mission review","cadence":"yearly","strategic_goal":"all","description":"Review identity, mission, and long-term outcomes.","trigger":"birthday or Jan 1","expected_output":"Updated identity + 365-day plan","status":"active"},
+]
+DEFAULT_IDENTITIES = {
+    "world_class_researcher":"Become a world-class organic electronics researcher.",
+    "grant_winning_pi":"Become a grant-winning principal investigator.",
+    "industry_builder":"Build lasting industry collaborations.",
+    "excellent_educator":"Be an excellent lecturer and mentor.",
+    "public_communicator":"Be a visible public science communicator.",
+    "deeptech_founder":"Eventually create a high-value deep-tech company.",
+    "strategic_leader":"Be a strategic leader who builds systems, not just outputs.",
+}
+REVERSIBILITY_CLASSES = {"one_way_door":"Hard to reverse — requires major commitment","two_way_door":"Easy to reverse — low-cost decision","experiment_first":"Should be tested before full commitment"}
 
 def uid(): return uuid.uuid4().hex[:8]
 def today_str(): return date.today().isoformat()
@@ -63,7 +95,7 @@ def load_json(path, default=None):
 def save_json(path, data, backup=True, is_records=False):
     if backup and path.exists():
         bak = path.with_suffix(path.suffix + ".bak")
-        shutil.copy2(path, bak)
+        shutil.copyfile(path, bak)
     if is_records:
         content = {"schema_version": SCHEMA_VERSION, "created_at": today_str(), "updated_at": today_str(), "records": data}
     else:
@@ -189,6 +221,64 @@ class Asset:
 class Doctrine:
     doctrine_id:str="";principle:str="";rationale:str="";evidence:str=""
     related_bias:str="";last_reviewed:str="";status:str="active"
+
+# V7 dataclasses
+@dataclass
+class StrategicIdentity:
+    identity_id:str="";name:str="";statement:str="";role:str="";long_term_aim:str=""
+    behaviors_that_support:list=field(default_factory=list)
+    behaviors_that_contradict:list=field(default_factory=list)
+    evidence_of_alignment:list=field(default_factory=list)
+    evidence_of_drift:list=field(default_factory=list)
+    last_reviewed:str="";status:str="active"
+
+@dataclass
+class StrategicCapital:
+    capital_id:str="";capital_type:str="intellectual_capital";name:str=""
+    current_score:int=5;evidence:list=field(default_factory=list)
+    activities_that_increase:list=field(default_factory=list)
+    activities_that_decrease:list=field(default_factory=list)
+    linked_projects:list=field(default_factory=list)
+    linked_assets:list=field(default_factory=list)
+    linked_relationships:list=field(default_factory=list)
+    last_reviewed:str=""
+
+@dataclass
+class Rhythm:
+    rhythm_id:str="";name:str="";cadence:str="daily";strategic_goal:str="all"
+    description:str="";trigger:str="";expected_output:str=""
+    last_completed:str="";next_due:str="";status:str="active"
+
+@dataclass
+class KeyResult:
+    kr_id:str="";description:str="";metric_type:str="";start_value:float=0.0
+    target_value:float=0.0;current_value:float=0.0;progress_percent:float=0.0
+    last_updated:str="";status:str="on_track"
+
+@dataclass
+class OKR:
+    objective_id:str="";title:str="";strategic_goal:str="research_publication"
+    period:str="quarterly";start_date:str="";end_date:str="";status:str="active"
+    confidence:int=5;key_results:list=field(default_factory=list);notes:str=""
+
+@dataclass
+class AuditEntry:
+    timestamp:str="";action_type:str="";entity_type:str="";entity_id:str=""
+    summary:str="";before_hash:str="";after_hash:str=""
+
+# V7 scenario result
+@dataclass
+class ScenarioResult:
+    path_name:str="";horizon:int=90
+    planned_time_allocation:dict=field(default_factory=dict)
+    strategic_alignment:float=0.0;expected_compounding:float=0.0
+    opportunity_capture:float=0.0;risk_control:float=0.0
+    feasibility:float=0.0;energy_sustainability:float=0.0
+    scenario_score:float=0.0
+    risk_exposure:int=0;relationship_capital_effect:int=0
+    publication_progress:int=0;grant_progress:int=0
+    venture_progress:int=0;public_influence_effect:int=0
+    likely_bottleneck:str="";recommended_correction:str=""
 
 # ======================================================================
 # SCORING
@@ -706,3 +796,719 @@ def compounding_asset_review(assets):
             "high_value_assets": len(high_value), "by_type": {k: len(v) for k, v in by_type.items()},
             "promote": promote, "needs_maintenance": maintain,
             "summary": f"{len(assets)} assets, {len(reused)} reused, {len(high_value)} high-value."}
+
+# ======================================================================
+# V7 — STRATEGIC SIMULATION & GOVERNANCE
+# ======================================================================
+
+# --- AI Provider (no-op) ---
+class AIProvider:
+    def generate(self, prompt: str) -> str:
+        raise NotImplementedError
+
+class NoOpAIProvider(AIProvider):
+    def generate(self, prompt: str) -> str:
+        return prompt
+
+# --- Audit ---
+import hashlib
+
+def hash_dict(d):
+    return hashlib.sha256(json.dumps(d, sort_keys=True, default=str).encode()).hexdigest()[:16]
+
+def record_audit_event(action_type, entity_type, entity_id, summary, before=None, after=None):
+    entries = load_records(AUDIT_PATH)
+    entry = AuditEntry(timestamp=datetime.now().isoformat(), action_type=action_type,
+                       entity_type=entity_type, entity_id=entity_id, summary=summary,
+                       before_hash=hash_dict(before) if before else "",
+                       after_hash=hash_dict(after) if after else "")
+    entries.append(entry.__dict__)
+    save_records(AUDIT_PATH, entries)
+
+def load_audit_log():
+    return load_records(AUDIT_PATH)
+
+# --- Scenario Simulator ---
+def scenario_simulator(horizon, data):
+    """Simulate 8 strategic paths and compare outcomes."""
+    results = []
+    for path in SCENARIO_PATHS:
+        sr = simulate_path(path, horizon, data)
+        sr.scenario_score = round(
+            sr.strategic_alignment * 0.25 + sr.expected_compounding * 0.20 +
+            sr.opportunity_capture * 0.15 + sr.risk_control * 0.15 +
+            sr.feasibility * 0.15 + sr.energy_sustainability * 0.10, 2)
+        results.append(sr)
+    results.sort(key=lambda r: -r.scenario_score)
+    return {"horizon": horizon, "scenarios": results, "best": results[0] if results else None}
+
+def simulate_path(path, horizon, data):
+    """Simulate a single strategic path."""
+    sr = ScenarioResult(path_name=SCENARIO_LABELS.get(path, path), horizon=horizon)
+    focus = SCENARIO_GOAL_FOCUS[path]
+    # Time allocation simulation
+    alloc = {g: 0 for g in STRATEGIC_GOALS}
+    if path == "balanced":
+        alloc = {"research_publication": 20, "grant_funding": 20, "industry_collaboration": 15,
+                 "teaching_excellence": 15, "public_influence": 10, "deeptech_venture": 10, "admin_maintenance": 10}
+    elif path == "admin_reactive":
+        alloc = {"research_publication": 10, "grant_funding": 10, "industry_collaboration": 5,
+                 "teaching_excellence": 10, "public_influence": 5, "deeptech_venture": 5, "admin_maintenance": 55}
+    elif focus == "research_publication":
+        alloc = {"research_publication": 35, "grant_funding": 20, "industry_collaboration": 10,
+                 "teaching_excellence": 10, "public_influence": 10, "deeptech_venture": 10, "admin_maintenance": 5}
+    elif focus == "grant_funding":
+        alloc = {"research_publication": 15, "grant_funding": 40, "industry_collaboration": 15,
+                 "teaching_excellence": 10, "public_influence": 5, "deeptech_venture": 5, "admin_maintenance": 10}
+    elif focus == "industry_collaboration":
+        alloc = {"research_publication": 15, "grant_funding": 15, "industry_collaboration": 35,
+                 "teaching_excellence": 10, "public_influence": 10, "deeptech_venture": 10, "admin_maintenance": 5}
+    elif focus == "teaching_excellence":
+        alloc = {"research_publication": 15, "grant_funding": 10, "industry_collaboration": 10,
+                 "teaching_excellence": 35, "public_influence": 15, "deeptech_venture": 5, "admin_maintenance": 10}
+    elif focus == "public_influence":
+        alloc = {"research_publication": 15, "grant_funding": 10, "industry_collaboration": 10,
+                 "teaching_excellence": 10, "public_influence": 35, "deeptech_venture": 10, "admin_maintenance": 10}
+    elif focus == "deeptech_venture":
+        alloc = {"research_publication": 10, "grant_funding": 10, "industry_collaboration": 15,
+                 "teaching_excellence": 5, "public_influence": 10, "deeptech_venture": 40, "admin_maintenance": 10}
+    sr.planned_time_allocation = alloc
+    # Compute dimension scores based on path and horizon
+    cfg = data.get("config", DEFAULT_CONFIG)
+    baseline = cfg.get("strategic_baseline", {})
+    records = data.get("records", [])
+    projs = data.get("projects", [])
+    risks = data.get("risks", [])
+    outcomes = data.get("outcomes", [])
+    opps = data.get("opportunities", [])
+    # Strategic alignment
+    alignment_score = 5
+    if path == "balanced": alignment_score = 8
+    elif path == "admin_reactive": alignment_score = 2
+    elif focus in ["research_publication", "grant_funding"]: alignment_score = 9
+    elif focus in ["industry_collaboration", "deeptech_venture"]: alignment_score = 7
+    elif focus in ["teaching_excellence", "public_influence"]: alignment_score = 6
+    sr.strategic_alignment = alignment_score
+    # Expected compounding
+    compound_score = 5
+    if focus == "research_publication": compound_score = 9
+    elif focus == "grant_funding": compound_score = 8
+    elif focus == "deeptech_venture": compound_score = 8
+    elif focus == "industry_collaboration": compound_score = 7
+    elif focus == "public_influence": compound_score = 6
+    elif path == "balanced": compound_score = 7
+    sr.expected_compounding = compound_score
+    # Opportunity capture
+    opp_score_val = 5
+    if focus == "grant_funding": opp_score_val = 9
+    elif focus == "industry_collaboration": opp_score_val = 8
+    elif focus == "deeptech_venture": opp_score_val = 7
+    elif path == "balanced": opp_score_val = 7
+    elif path == "admin_reactive": opp_score_val = 2
+    sr.opportunity_capture = opp_score_val
+    # Risk control
+    risk_vals = {"research_first": 7, "grant_first": 6, "industry_first": 5, "teaching_first": 7,
+                 "public_influence_first": 5, "deeptech_venture_first": 4, "balanced": 7, "admin_reactive": 3}
+    sr.risk_control = risk_vals.get(path, 5)
+    # Feasibility
+    feas = {"research_first": 8, "grant_first": 7, "industry_first": 7, "teaching_first": 8,
+            "public_influence_first": 7, "deeptech_venture_first": 5, "balanced": 8, "admin_reactive": 9}
+    sr.feasibility = feas.get(path, 5)
+    # Energy sustainability
+    energy = {"research_first": 6, "grant_first": 7, "industry_first": 7, "teaching_first": 8,
+              "public_influence_first": 7, "deeptech_venture_first": 5, "balanced": 8, "admin_reactive": 5}
+    sr.energy_sustainability = energy.get(path, 5)
+    # Path-specific effects
+    h_factor = horizon / 90
+    sr.risk_exposure = round(risk_vals.get(path, 5) * h_factor)
+    sr.publication_progress = round(alloc.get("research_publication", 0) / 5 * h_factor)
+    sr.grant_progress = round(alloc.get("grant_funding", 0) / 5 * h_factor)
+    sr.venture_progress = round(alloc.get("deeptech_venture", 0) / 5 * h_factor)
+    sr.public_influence_effect = round(alloc.get("public_influence", 0) / 5 * h_factor)
+    sr.relationship_capital_effect = round(alloc.get("industry_collaboration", 0) / 5 * h_factor)
+    # Bottleneck
+    if sr.risk_exposure >= 7: sr.likely_bottleneck = "risk_exposure"
+    elif alloc.get("admin_maintenance", 0) > 30: sr.likely_bottleneck = "admin_overload"
+    elif path == "deeptech_venture_first" and horizon < 180: sr.likely_bottleneck = "time_horizon_too_short"
+    else: sr.likely_bottleneck = "none_specific"
+    # Recommendation
+    if path == "admin_reactive": sr.recommended_correction = "Shift to any active strategic path immediately."
+    elif sr.risk_exposure >= 7: sr.recommended_correction = "Add risk mitigations before committing."
+    elif alloc.get("admin_maintenance", 0) < 5: sr.recommended_correction = "Ensure admin does not drop below minimum sustainable level."
+    else: sr.recommended_correction = "Path viable — monitor leading indicators."
+    return sr
+
+# --- Trade-off Engine ---
+def tradeoff_engine(option_a, option_b, option_c=None):
+    """Compare 2-3 options across multiple dimensions."""
+    options = [option_a, option_b]
+    if option_c: options.append(option_c)
+    results = []
+    for i, opt in enumerate(options):
+        ev = opt.get("expected_value", 5) * 0.25 + opt.get("risk", 3) * -0.15 + opt.get("strategic_goal_served_score", 5) * 0.20 + opt.get("opportunity_cost", 3) * -0.15 + opt.get("evidence_strength", 5) * 0.15 + opt.get("reversibility_score", 5) * 0.10
+        results.append({"option": chr(65 + i), "label": opt.get("label", f"Option {chr(65+i)}"), "expected_value": opt.get("expected_value", 5), "risk": opt.get("risk", 3), "opportunity_cost": opt.get("opportunity_cost", 3), "evidence_strength": opt.get("evidence_strength", 5), "reversibility_class": opt.get("reversibility_class", "two_way_door"), "uncertainty": opt.get("uncertainty", "medium"), "hidden_cost": opt.get("hidden_cost", ""), "score": round(ev, 2)})
+    results.sort(key=lambda r: -r["score"])
+    best = results[0]
+    rec = f"Recommend: {best['label']} (score: {best['score']})"
+    change_rec = ""
+    if len(results) >= 2 and best["score"] - results[1]["score"] < 0.5:
+        change_rec = "Close call — small new evidence could change the recommendation."
+    elif best["uncertainty"] == "high":
+        change_rec = "High uncertainty — gather more evidence before committing."
+    return {"options": results, "recommendation": rec, "what_would_change": change_rec or "Recommendation is stable with current evidence."}
+
+# --- Operating Rhythm ---
+def load_rhythms():
+    data = load_records(RHYTHM_PATH)
+    if not data:
+        defaults = [Rhythm(**r) for r in DEFAULT_RHYTHMS]
+        save_records(RHYTHM_PATH, [r.__dict__ for r in defaults])
+        return defaults
+    return [Rhythm(**r) for r in data]
+
+def save_rhythms(rs):
+    save_records(RHYTHM_PATH, [r.__dict__ for r in rs])
+
+def rhythm_review(rhythms=None):
+    if rhythms is None: rhythms = load_rhythms()
+    now = date.today()
+    overdue = []
+    cadence_days = {"daily": 0, "weekly": 7, "monthly": 30, "quarterly": 90, "yearly": 365}
+    for r in rhythms:
+        if r.status != "active": continue
+        if r.last_completed:
+            try:
+                last = date.fromisoformat(r.last_completed)
+                days_since = (now - last).days
+                if days_since > cadence_days.get(r.cadence, 7):
+                    overdue.append({"name": r.name, "cadence": r.cadence, "days_overdue": days_since,
+                                    "last_completed": r.last_completed, "trigger": r.trigger})
+            except ValueError:
+                overdue.append({"name": r.name, "cadence": r.cadence, "days_overdue": "unknown",
+                                "last_completed": r.last_completed, "trigger": r.trigger})
+        else:
+            overdue.append({"name": r.name, "cadence": r.cadence, "days_overdue": "never",
+                            "last_completed": "never", "trigger": r.trigger})
+    return {"total": len(rhythms), "active": sum(1 for r in rhythms if r.status == "active"),
+            "overdue": overdue, "summary": f"{len(overdue)} of {len(rhythms)} rhythm items overdue."}
+
+# --- Identity Review ---
+def identity_review(identities, records, tasks, decisions):
+    """Compare behavior against declared identity and detect drift."""
+    if not identities: return {"message": "No identities defined. Use --add-identity."}
+    results = []
+    for ident in identities:
+        alignment = []; drift = []
+        role = ident.role or ident.name
+        role_goals = {"World-Class Researcher": "research_publication", "Grant-Winning PI": "grant_funding",
+                      "Industry Builder": "industry_collaboration", "Excellent Educator": "teaching_excellence",
+                      "Public Communicator": "public_influence", "Deep-Tech Founder": "deeptech_venture",
+                      "Strategic Leader": "balanced"}
+        expected_goal = role_goals.get(role, "research_publication")
+        # Check time allocation against identity role
+        if records:
+            goal_mins = {g: 0 for g in STRATEGIC_GOALS}
+            for r in records[-14:]:
+                for g in STRATEGIC_GOALS:
+                    goal_mins[g] += r.get("portfolio", {}).get("by_goal", {}).get(g, {}).get("minutes", 0)
+            total = sum(goal_mins.values()) or 1
+            # Map identity to expected goals
+            goal_pct = goal_mins.get(expected_goal, 0) / total * 100
+            if goal_pct >= 15:
+                alignment.append(f"{goal_pct:.0f}% time on {expected_goal} — aligned with {role}.")
+            else:
+                drift.append(f"Only {goal_pct:.0f}% time on {expected_goal} — drifting from {role}.")
+            admin_pct = goal_mins.get("admin_maintenance", 0) / total * 100
+            if admin_pct > 25:
+                drift.append(f"Admin at {admin_pct:.0f}% — may crowd out {expected_goal}.")
+        # Delayed tasks
+        delayed = []
+        for r in records[-14:]:
+            for t in r.get("delay", []):
+                n = t.get("name", ""); delayed.append(n)
+        if len(delayed) > 5:
+            drift.append(f"{len(delayed)} delayed tasks in last 14 days.")
+        corrections = []
+        if drift:
+            corrections.append(f"Protect two 90-minute {expected_goal} blocks before admin tasks.")
+            if admin_pct > 25: corrections.append("Reduce admin by batching or delegating non-strategic tasks.")
+        results.append({"identity": ident.name, "role": role, "alignment": alignment, "drift": drift,
+                        "corrections": corrections, "verdict": "Aligned" if not drift else "Drift detected"})
+    return {"identities": results, "overall_drift": sum(1 for r in results if r["verdict"] != "Aligned")}
+
+# --- Strategic Capital ---
+def capital_review(capitals):
+    """Review strategic capital: growing, decaying, most important."""
+    if not capitals:
+        return {"total": 0, "message": "No capital defined. Use --add-capital."}
+    growing = [c for c in capitals if c.current_score >= 7]
+    decaying = [c for c in capitals if c.current_score <= 3]
+    sorted_cap = sorted(capitals, key=lambda c: -c.current_score)
+    recommendations = []
+    for c in decaying:
+        if c.activities_that_increase:
+            recommendations.append(f"Increase {c.capital_type}: {c.activities_that_increase[0]}")
+    return {"total": len(capitals), "growing": len(growing), "decaying": len(decaying),
+            "top_3": [{"name": c.name, "type": c.capital_type, "score": c.current_score} for c in sorted_cap[:3]],
+            "decaying_details": [{"name": c.name, "type": c.capital_type, "score": c.current_score,
+                                  "how_to_increase": c.activities_that_increase[:2]} for c in decaying],
+            "recommendations": recommendations,
+            "summary": f"{len(growing)} capitals growing, {len(decaying)} decaying."}
+
+# --- 30/90/365-day Plan Generator ---
+def plan_generator(horizon, data):
+    """Generate a strategic plan for a given horizon."""
+    outcomes = data.get("outcomes", [])
+    projs = data.get("projects", [])
+    opps = data.get("opportunities", [])
+    risks = data.get("risks", [])
+    assets = data.get("assets", [])
+    decisions = data.get("decisions", [])
+    relationships = data.get("relationships", [])
+    hypotheses = data.get("hypotheses", [])
+    experiments = data.get("experiments", [])
+    predictions = data.get("predictions", [])
+    records = data.get("records", [])
+    cfg = data.get("config", DEFAULT_CONFIG)
+    goal_mins = {g: 0 for g in STRATEGIC_GOALS}
+    for r in records:
+        for g in STRATEGIC_GOALS: goal_mins[g] += r.get("portfolio", {}).get("by_goal", {}).get(g, {}).get("minutes", 0)
+    total = sum(goal_mins.values()) or 1
+    active_projs = [p for p in projs if getattr(p, "status", "active") == "active"]
+    top_opps = sorted(opps, key=lambda o: opp_score(o) if hasattr(o, "potential_value") else 0, reverse=True)[:3]
+    top_risks = sorted(risks, key=lambda r: risk_score(r) if hasattr(r, "probability") else 0, reverse=True)[:3]
+    active_rels = [r for r in relationships if getattr(r, "status", "active") == "active"]
+    top_assets = sorted(assets, key=lambda a: getattr(a, "estimated_future_value", 0), reverse=True)[:3]
+    stale_opps = [o for o in opps if getattr(o, "status", "") == "open" and getattr(o, "last_touched_date", "") and getattr(o, "last_touched_date", "") < today_str()]
+    unresolved_decisions = [d for d in decisions if not getattr(d, "actual_outcome", "")]
+    unresolvable_preds = [p for p in predictions if not getattr(p, "resolved", False)]
+    return {
+        "horizon": horizon,
+        "strategic_thesis": f"Over {horizon} days: {'Build deep research capability.' if horizon <= 30 else 'Establish grant pipeline and industry partnerships.' if horizon <= 90 else 'Build a self-sustaining research program with diversified funding, public influence, and venture optionality.'}",
+        "top_outcomes": [getattr(o, "name", str(o)) for o in outcomes[:3]] if outcomes else ["Define 3 strategic outcomes"],
+        "projects_to_protect": [getattr(p, "name", str(p)) for p in active_projs[:3]] if active_projs else ["Prioritize one active project"],
+        "opportunities_to_pursue": [getattr(o, "name", str(o)) for o in top_opps] if top_opps else ["Identify one grant or collaboration opportunity"],
+        "relationships_to_strengthen": [getattr(r, "name", str(r)) for r in active_rels[:3]] if active_rels else ["Reconnect with one dormant collaborator"],
+        "assets_to_build": [getattr(a, "name", str(a)) for a in top_assets] if top_assets else ["Create one reusable template or dataset"],
+        "risks_to_mitigate": [getattr(r, "title", str(r)) for r in top_risks] if top_risks else ["Identify and mitigate top 3 risks"],
+        "assumptions_to_test": [getattr(h, "statement", str(h)) for h in hypotheses[:3]] if hypotheses else ["Test one key assumption about your strategy"],
+        "experiments_to_run": [getattr(e, "title", str(e)) for e in experiments[:3]] if experiments else ["Run one minimum viable experiment"],
+        "rhythms_to_schedule": ["Daily: priorities + deep work block", "Weekly: delayed tasks + admin % check"],
+        "kill_list_items": [f"Stale opportunity: {getattr(o, 'name', str(o))}" for o in stale_opps[:2]] + [f"Unresolved decision: {getattr(d, 'title', str(d))}" for d in unresolved_decisions[:2]] + [f"Unresolved prediction: {getattr(p, 'prediction_statement', str(p))}" for p in unresolvable_preds[:2]],
+        "success_metrics": [f"Complete {max(1, horizon // 30)} major milestone(s)", f"Keep admin < 25% of time", f"Resolve all predictions within horizon"],
+    }
+
+# --- Backcasting ---
+def backcast_generator(outcome, target_date_str, why_matters, success_metric):
+    """Reverse-engineer a long-term goal into milestones and present action."""
+    try: target = date.fromisoformat(target_date_str)
+    except ValueError: target = date.today() + timedelta(days=365)
+    days = (target - date.today()).days
+    if days <= 0: days = 365
+    milestones = []
+    months = max(3, days // 30)
+    chunk = max(1, months // 4)
+    for i in range(months, 0, -chunk):
+        m = months - i + chunk
+        if m <= 1: milestones.append(f"Month 1: Define scope, identify collaborators, draft concept note.")
+        elif m <= months * 0.5: milestones.append(f"Month {m}: Build preliminary data, materials, or relationships.")
+        elif m <= months * 0.8: milestones.append(f"Month {m}: Draft full proposal, gather feedback, iterate.")
+        else: milestones.append(f"Month {m}: Finalize, submit, or launch.")
+    return {"desired_outcome": outcome, "target_date": target_date_str, "why_it_matters": why_matters,
+            "success_metric": success_metric, "total_months": months,
+            "milestones": milestones, "required_weekly_rhythm": "Dedicate 2 focused blocks per week to this outcome.",
+            "leading_indicators": ["Concept note drafted", "Collaborator confirmed", "Preliminary data collected",
+                                    "First draft complete", "Feedback received"],
+            "risks": ["Scope creep", "Competing priorities", "Collaborator availability"],
+            "first_next_action": f"This week: Draft the one-page concept note and contact one potential collaborator."}
+
+# --- OKR ---
+def load_okrs():
+    data = load_records(OKRS_PATH)
+    return [OKR(**o) for o in data] if data else []
+
+def save_okrs(okrs):
+    records = []
+    for o in okrs:
+        d = o.__dict__.copy()
+        d["key_results"] = [kr.__dict__ if isinstance(kr, KeyResult) else kr for kr in d.get("key_results", [])]
+        records.append(d)
+    save_records(OKRS_PATH, records)
+
+def okr_review(okrs=None):
+    if okrs is None: okrs = load_okrs()
+    if not okrs: return {"total": 0, "message": "No OKRs defined. Use --add-okr."}
+    results = []
+    for o in okrs:
+        krs = o.key_results if isinstance(o.key_results, list) else []
+        kr_status = []
+        for kr in krs:
+            if isinstance(kr, dict):
+                pct = kr.get("progress_percent", 0)
+                kr_status.append({"description": kr.get("description", ""), "progress": pct,
+                                  "status": "on_track" if pct >= 50 else ("at_risk" if pct >= 25 else "blocked")})
+            elif isinstance(kr, KeyResult):
+                kr_status.append({"description": kr.description, "progress": kr.progress_percent,
+                                  "status": kr.status})
+        avg_progress = round(sum(k["progress"] for k in kr_status) / len(kr_status), 1) if kr_status else 0
+        blocked = [k for k in kr_status if k["status"] == "blocked"]
+        results.append({"objective": o.title, "strategic_goal": o.strategic_goal, "period": o.period,
+                        "confidence": o.confidence, "avg_progress": avg_progress,
+                        "key_results": kr_status, "blocked_count": len(blocked),
+                        "next_action": "Unblock a key result" if blocked else "Update progress on all KRs"})
+    return {"total": len(okrs), "objectives": results,
+            "summary": f"{len(okrs)} objectives, avg progress: {round(sum(r['avg_progress'] for r in results)/len(results), 1) if results else 0}%"}
+
+# --- Rebalance ---
+def rebalance_engine(records, config, okrs, outcomes, capitals):
+    """Compare actual allocation to baseline + strategic needs and recommend changes."""
+    cfg = config or DEFAULT_CONFIG
+    baseline = cfg.get("strategic_baseline", {})
+    goal_mins = {g: 0 for g in STRATEGIC_GOALS}
+    for r in records[-30:]:
+        for g in STRATEGIC_GOALS:
+            goal_mins[g] += r.get("portfolio", {}).get("by_goal", {}).get(g, {}).get("minutes", 0)
+    total = sum(goal_mins.values()) or 1
+    actual_pcts = {g: round(goal_mins[g] / total * 100, 1) for g in STRATEGIC_GOALS}
+    adjustments = []
+    for g in STRATEGIC_GOALS:
+        actual = actual_pcts.get(g, 0)
+        target = baseline.get(g, 15)
+        gap = target - actual
+        if gap > 10: adjustments.append({"goal": g, "actual_pct": actual, "target_pct": target,
+                                          "gap": round(gap, 1), "action": f"Increase {g} by {round(gap)}% (~{round(gap * 2)} min/day)."})
+        elif gap < -10: adjustments.append({"goal": g, "actual_pct": actual, "target_pct": target,
+                                             "gap": round(gap, 1), "action": f"Reduce {g} by {round(-gap)}%."})
+    # Check capital needs
+    if capitals:
+        decaying = [c for c in capitals if c.current_score <= 3]
+        if decaying:
+            adjustments.append({"goal": "strategic_capital", "action": f"Invest in decaying capital: {decaying[0].capital_type}."})
+    # Check OKR needs
+    if okrs:
+        active_okrs = [o for o in okrs if o.status == "active"]
+        for o in active_okrs[:2]:
+            adjustments.append({"goal": f"okr:{o.title}", "action": f"Allocate time to advance OKR: {o.title}."})
+    return {"actual_allocation": actual_pcts, "baseline": baseline,
+            "adjustments": adjustments,
+            "summary": f"{len(adjustments)} adjustment(s) recommended." if adjustments else "Allocation is aligned. No changes needed.",
+            "top_recommendation": adjustments[0]["action"] if adjustments else "Maintain current allocation."}
+
+# --- Integrity Check ---
+def integrity_check():
+    """Check data integrity across all stores."""
+    issues = []
+    stores = {"projects": (PROJECTS_PATH, Project), "opportunities": (OPPORTUNITIES_PATH, Opportunity),
+              "decisions": (DECISIONS_PATH, Decision), "experiments": (EXPERIMENTS_PATH, Experiment),
+              "risks": (RISKS_PATH, Risk), "relationships": (RELATIONSHIPS_PATH, Relationship),
+              "principles": (PRINCIPLES_PATH, Principle), "outcomes": (OUTCOMES_PATH, Outcome),
+              "evidence": (EVIDENCE_PATH, Evidence), "assumptions": (ASSUMPTIONS_PATH, Assumption),
+              "predictions": (PREDICTIONS_PATH, Prediction), "hypotheses": (HYPOTHESES_PATH, Hypothesis),
+              "assets": (ASSETS_PATH, Asset), "doctrine": (DOCTRINE_PATH, Doctrine),
+              "identity": (IDENTITY_PATH, StrategicIdentity), "capital": (CAPITAL_PATH, StrategicCapital),
+              "rhythm": (RHYTHM_PATH, Rhythm), "okrs": (OKRS_PATH, OKR)}
+    # Check JSON files for corruption
+    for name, (path, _) in stores.items():
+        if path.exists():
+            try: json.loads(path.read_text())
+            except json.JSONDecodeError: issues.append(f"Corrupt JSON: {path}")
+    # Check schema versions
+    for name, (path, _) in stores.items():
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+                if isinstance(data, dict) and "records" in data:
+                    if "schema_version" not in data: issues.append(f"Missing schema_version: {name}")
+                    if "updated_at" not in data: issues.append(f"Missing updated_at: {name}")
+            except: pass
+    # Check for duplicate IDs
+    for name, (path, cls) in stores.items():
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+                records = data.get("records", data) if isinstance(data, dict) else data
+                if isinstance(records, list):
+                    ids = {}
+                    for r in records:
+                        if isinstance(r, dict):
+                            for id_field in [f"{name.rstrip('s')}_id", "id"]:
+                                if id_field in r and r[id_field]:
+                                    if r[id_field] in ids: issues.append(f"Duplicate ID {r[id_field]} in {name}")
+                                    ids[r[id_field]] = True
+                                    break
+            except: pass
+    # Check broken project links
+    proj_ids = set()
+    if PROJECTS_PATH.exists():
+        try:
+            data = json.loads(PROJECTS_PATH.read_text())
+            records = data.get("records", data) if isinstance(data, dict) else data
+            proj_ids = {r.get("project_id", "") for r in records if isinstance(r, dict)}
+        except: pass
+    for name, (path, _) in stores.items():
+        if name == "projects" or not path.exists(): continue
+        try:
+            data = json.loads(path.read_text())
+            records = data.get("records", data) if isinstance(data, dict) else data
+            if isinstance(records, list):
+                for r in records:
+                    if isinstance(r, dict):
+                        pid = r.get("project_id") or r.get("linked_project_id")
+                        if pid and pid not in proj_ids and proj_ids: issues.append(f"Broken project link in {name}: {pid}")
+        except: pass
+    return {"issues": issues, "total_issues": len(issues),
+            "summary": f"{len(issues)} integrity issue(s) found." if issues else "All integrity checks passed."}
+
+def repair_integrity():
+    """Safely repair fixable integrity issues. Never deletes user data."""
+    repairs = []
+    stores = [(PROJECTS_PATH, "projects"), (OPPORTUNITIES_PATH, "opportunities"),
+              (DECISIONS_PATH, "decisions"), (EXPERIMENTS_PATH, "experiments"),
+              (RISKS_PATH, "risks"), (RELATIONSHIPS_PATH, "relationships"),
+              (PRINCIPLES_PATH, "principles"), (OUTCOMES_PATH, "outcomes"),
+              (EVIDENCE_PATH, "evidence"), (ASSUMPTIONS_PATH, "assumptions"),
+              (PREDICTIONS_PATH, "predictions"), (HYPOTHESES_PATH, "hypotheses"),
+              (ASSETS_PATH, "assets"), (DOCTRINE_PATH, "doctrine"),
+              (IDENTITY_PATH, "identity"), (CAPITAL_PATH, "capital"),
+              (RHYTHM_PATH, "rhythm"), (OKRS_PATH, "okrs")]
+    for path, name in stores:
+        if not path.exists(): continue
+        try:
+            data = json.loads(path.read_text())
+            modified = False
+            if isinstance(data, dict) and "records" in data:
+                if "schema_version" not in data:
+                    data["schema_version"] = CURRENT_SCHEMA_VERSION; modified = True
+                    repairs.append(f"Added schema_version to {name}")
+                if "updated_at" not in data:
+                    data["updated_at"] = today_str(); modified = True
+                    repairs.append(f"Added updated_at to {name}")
+                # Remove empty IDs
+                records = data.get("records", [])
+                if isinstance(records, list):
+                    for r in records:
+                        if isinstance(r, dict):
+                            for id_field in [f"{name.rstrip('s')}_id"]:
+                                if id_field in r and not r[id_field]:
+                                    r[id_field] = uid(); modified = True
+                                    repairs.append(f"Assigned new ID in {name}")
+            if modified:
+                bak = path.with_suffix(path.suffix + ".bak")
+                if not bak.exists(): shutil.copyfile(path, bak)
+                path.write_text(json.dumps(data, indent=2))
+        except (json.JSONDecodeError, OSError): pass
+    return {"repairs": repairs, "total_repairs": len(repairs),
+            "summary": f"{len(repairs)} repair(s) applied." if repairs else "No repairs needed."}
+
+# --- Local Search ---
+def local_search(query):
+    """Search across all JSON stores for a query string."""
+    q = query.lower()
+    results = []
+    stores = [(PROJECTS_PATH, "Project"), (OPPORTUNITIES_PATH, "Opportunity"),
+              (DECISIONS_PATH, "Decision"), (EXPERIMENTS_PATH, "Experiment"),
+              (RISKS_PATH, "Risk"), (RELATIONSHIPS_PATH, "Relationship"),
+              (OUTCOMES_PATH, "Outcome"), (EVIDENCE_PATH, "Evidence"),
+              (ASSUMPTIONS_PATH, "Assumption"), (PREDICTIONS_PATH, "Prediction"),
+              (HYPOTHESES_PATH, "Hypothesis"), (ASSETS_PATH, "Asset"),
+              (DOCTRINE_PATH, "Doctrine"), (OKRS_PATH, "OKR"),
+              (IDENTITY_PATH, "Identity"), (CAPITAL_PATH, "Capital"),
+              (RHYTHM_PATH, "Rhythm")]
+    for path, store_type in stores:
+        if not path.exists(): continue
+        try:
+            data = json.loads(path.read_text())
+            records = data.get("records", data) if isinstance(data, dict) else data
+            if isinstance(records, list):
+                for r in records:
+                    if isinstance(r, dict) and q in json.dumps(r).lower():
+                        name = r.get("name") or r.get("title") or r.get("statement") or r.get("principle") or r.get("prediction_statement") or r.get("description", "")
+                        results.append({"store": store_type, "name": str(name)[:60],
+                                        "match": str(r.get("name") or r.get("title") or "")[:60]})
+        except: pass
+    # Search history
+    for f in sorted(HISTORY_DIR.glob("*_plan.json")) if HISTORY_DIR.exists() else []:
+        try:
+            data = json.loads(f.read_text())
+            if q in json.dumps(data).lower():
+                results.append({"store": "History", "name": f.stem.replace("_plan", ""), "match": f"Plan from {f.stem.replace('_plan', '')}"})
+        except: pass
+    return {"query": query, "results": results, "total": len(results),
+            "summary": f"Found {len(results)} result(s) for '{query}'."}
+
+# --- Report Pack ---
+def generate_report_pack(export_dir=None):
+    """Generate a folder of strategic reports."""
+    if export_dir is None:
+        export_dir = Path(f"reports/{today_str()}_strategy_pack")
+    export_dir = Path(export_dir)
+    export_dir.mkdir(parents=True, exist_ok=True)
+    reports = {}
+    # Dashboard
+    try:
+        tasks = demo_tasks()
+        do_tasks = [t for t in tasks if t.get("final_score", 0) >= 4][:3]
+        do_names = [t["name"] for t in do_tasks]
+        reports["dashboard.txt"] = f"DO ({len(do_names)}): {', '.join(do_names)}\n"
+    except: reports["dashboard.txt"] = "Dashboard unavailable.\n"
+    # Scorecard
+    try:
+        data = gather_all_data()
+        sc = strategic_scorecard(data.get("tasks", []), data.get("outcomes", []), data.get("predictions", []), data.get("decisions", []), data.get("records", []))
+        reports["scorecard.txt"] = f"Overall: {sc['overall_score']}/10 ({sc['grade']})\n" + "\n".join(f"{d['dimension']}: {d['score']}/10 — {d['detail']}" for d in sc["dimensions"])
+    except: reports["scorecard.txt"] = "Scorecard unavailable.\n"
+    # Strategy memo
+    try:
+        memo_lines = []
+        records = load_recent_history(30); cfg = load_config()
+        projs = [Project(**p) for p in load_json(PROJECTS_PATH, [])] if PROJECTS_PATH.exists() else []
+        opps = [Opportunity(**o) for o in load_json(OPPORTUNITIES_PATH, [])] if OPPORTUNITIES_PATH.exists() else []
+        risks = [Risk(**r) for r in load_json(RISKS_PATH, [])] if RISKS_PATH.exists() else []
+        memo_lines.append(f"STRATEGIC MEMO — {today_str()}")
+        memo_lines.append(f"Active projects: {sum(1 for p in projs if p.status=='active')}")
+        memo_lines.append(f"Open opportunities: {sum(1 for o in opps if o.status=='open')}")
+        memo_lines.append(f"Active risks: {sum(1 for r in risks if r.status=='active')}")
+        reports["strategy_memo.txt"] = "\n".join(memo_lines)
+    except: reports["strategy_memo.txt"] = "Strategy memo unavailable.\n"
+    # Red-team and board memo prompts
+    try:
+        data = gather_all_data()
+        reports["red_team_prompt.txt"] = red_team_prompt(data.get("tasks", []), data.get("outcomes", []), data.get("decisions", []), data.get("risks", []), data.get("records", []))
+        reports["board_memo_prompt.txt"] = board_memo_prompt(data.get("outcomes", []), data.get("decisions", []), data.get("assets", []), data.get("risks", []), data.get("records", []))
+    except:
+        reports["red_team_prompt.txt"] = "Red-team prompt unavailable.\n"
+        reports["board_memo_prompt.txt"] = "Board memo prompt unavailable.\n"
+    # Write all reports
+    for filename, content in reports.items():
+        (export_dir / filename).write_text(str(content))
+    return {"export_dir": str(export_dir), "files": list(reports.keys()), "count": len(reports)}
+
+def gather_all_data():
+    """Gather all store data for report pack generation."""
+    data = {}
+    data["config"] = load_config()
+    data["records"] = load_recent_history(90)
+    for path, name in [(PROJECTS_PATH, "projects"), (OPPORTUNITIES_PATH, "opportunities"),
+                        (DECISIONS_PATH, "decisions"), (EXPERIMENTS_PATH, "experiments"),
+                        (RISKS_PATH, "risks"), (RELATIONSHIPS_PATH, "relationships"),
+                        (OUTCOMES_PATH, "outcomes"), (EVIDENCE_PATH, "evidence"),
+                        (ASSUMPTIONS_PATH, "assumptions"), (PREDICTIONS_PATH, "predictions"),
+                        (HYPOTHESES_PATH, "hypotheses"), (ASSETS_PATH, "assets"), (DOCTRINE_PATH, "doctrine")]:
+        try:
+            if path.exists():
+                raw = json.loads(path.read_text())
+                data[name] = raw.get("records", raw) if isinstance(raw, dict) else raw
+        except: data[name] = []
+    # Get demo tasks
+    try:
+        result = demo_tasks()
+        data["tasks"] = [Task(**t) for t in result] if result else []
+    except: data["tasks"] = []
+    return data
+
+def demo_tasks():
+    """Return demo ranked tasks as dicts without importing agent."""
+    ah = 6.0; energy = 7
+    tasks = [Task("Write grant proposal outline", 9, 9, 10, 8, 10, 9, 8, 2, 9, 120, "grant_funding", "Open Overleaf and draft the 1-page outline"),
+             Task("Review literature on OPV materials", 6, 5, 9, 7, 9, 4, 7, 3, 7, 90, "research_publication", "Pull 5 recent papers from Google Scholar"),
+             Task("Prepare slides for lab meeting", 5, 8, 4, 3, 5, 8, 6, 3, 4, 45, "teaching_excellence", "Copy template and update figures", True),
+             Task("Reply to industry partner email", 7, 6, 8, 6, 8, 5, 7, 2, 3, 20, "industry_collaboration", "Draft reply in 3 bullet points"),
+             Task("Update CV & publication list", 5, 3, 7, 5, 7, 2, 5, 4, 3, 60, "public_influence", "Add the 2 recent accepted papers", True),
+             Task("Organise lab inventory", 2, 2, 1, 1, 1, 1, 2, 8, 2, 90, "admin_maintenance", "", True)]
+    ranked = rank_tasks(tasks)
+    return [ser_task(t) for t in ranked]
+
+# --- AI Council Prompt ---
+def ai_council_prompt():
+    """Generate a multi-role AI council prompt."""
+    data = gather_all_data()
+    tasks = data.get("tasks", [])
+    records = data.get("records", [])
+    projs = data.get("projects", [])
+    risks = data.get("risks", [])
+    opps = data.get("opportunities", [])
+    outcomes = data.get("outcomes", [])
+    predictions = data.get("predictions", [])
+    decisions = data.get("decisions", [])
+    capitals = data.get("capital", [])
+    scorecard = strategic_scorecard(tasks, outcomes, predictions, decisions, records)
+    top_tasks = [t.name for t in tasks[:3]] if tasks else ["(none)"]
+    top_risks = [r.get("title", "") if isinstance(r, dict) else r.title for r in risks[:3]] if risks else ["(none)"]
+    return f"""=== AI STRATEGIC COUNCIL PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+
+You are a council of 10 strategic advisors. Review the data and provide your candid assessment.
+
+--- STRATEGIC DATA ---
+Scorecard: {scorecard['overall_score']}/10 ({scorecard['grade']})
+Top priorities: {'; '.join(top_tasks)}
+Top risks: {'; '.join(top_risks)}
+Open opportunities: {len(opps) if isinstance(opps, list) else 0}
+Active projects: {sum(1 for p in projs if (isinstance(p, dict) and p.get('status')=='active') or (hasattr(p, 'status') and p.status=='active')) if isinstance(projs, list) else 0}
+Capital health: {sum(1 for c in capitals if (isinstance(c, dict) and c.get('current_score', 5) >= 7) or (hasattr(c, 'current_score') and c.current_score >= 7)) if isinstance(capitals, list) else 0} growing / {sum(1 for c in capitals if (isinstance(c, dict) and c.get('current_score', 5) <= 3) or (hasattr(c, 'current_score') and c.current_score <= 3)) if isinstance(capitals, list) else 0} decaying
+
+--- COUNCIL ROLES ---
+For each role, provide: Diagnosis, one recommendation, one concern, one question, one deletion candidate.
+
+1. CHIEF OF STAFF
+2. PRINCIPAL INVESTIGATOR
+3. GRANT REVIEWER
+4. INDUSTRY PARTNER
+5. DEEP-TECH FOUNDER
+6. VENTURE CAPITALIST
+7. TEACHING MENTOR
+8. PUBLIC INTELLECTUAL STRATEGIST
+9. RISK OFFICER
+10. PERSONAL SUSTAINABILITY COACH
+
+--- FINAL SYNTHESIS ---
+Highest-leverage move in 24 hours:
+Highest-leverage move in 7 days:
+Highest-leverage move in 30 days:
+One strategic bet:
+One thing to stop immediately:
+=== END AI COUNCIL PROMPT ==="""
+
+# --- Migration ---
+def get_store_version(path):
+    if not path.exists(): return None
+    try:
+        data = json.loads(path.read_text())
+        if isinstance(data, dict):
+            return data.get("schema_version", "unknown")
+    except: return "corrupt"
+    return "unknown"
+
+def migrate_v6_to_v7(data):
+    """Migrate a v6 store to v7 format."""
+    if not isinstance(data, dict): return data
+    if "records" not in data:
+        data = {"schema_version": CURRENT_SCHEMA_VERSION, "created_at": today_str(),
+                "updated_at": today_str(), "records": data if isinstance(data, list) else []}
+    data["schema_version"] = CURRENT_SCHEMA_VERSION
+    if "updated_at" not in data: data["updated_at"] = today_str()
+    if "created_at" not in data: data["created_at"] = today_str()
+    return data
+
+def migrate_store(path):
+    """Migrate a single store from v6 to v7."""
+    if not path.exists(): return "skipped (not found)"
+    bak = path.with_suffix(path.suffix + ".v6.bak")
+    if not bak.exists(): shutil.copyfile(path, bak)
+    try:
+        data = json.loads(path.read_text())
+        migrated = migrate_v6_to_v7(data)
+        path.write_text(json.dumps(migrated, indent=2))
+        return "migrated"
+    except json.JSONDecodeError: return "skipped (corrupt)"
+
+def migrate_all_stores():
+    """Migrate all stores to v7."""
+    results = {}
+    stores = [PROJECTS_PATH, OPPORTUNITIES_PATH, DECISIONS_PATH, EXPERIMENTS_PATH,
+              RISKS_PATH, RELATIONSHIPS_PATH, PRINCIPLES_PATH, OUTCOMES_PATH,
+              EVIDENCE_PATH, ASSUMPTIONS_PATH, PREDICTIONS_PATH, HYPOTHESES_PATH,
+              ASSETS_PATH, DOCTRINE_PATH, IDENTITY_PATH, CAPITAL_PATH, RHYTHM_PATH, OKRS_PATH]
+    for path in stores:
+        results[path.name] = migrate_store(path)
+    return {"results": results, "summary": f"Migrated {sum(1 for v in results.values() if v == 'migrated')} stores."}

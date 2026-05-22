@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-"""Chief of Staff Agent v6 — strategic intelligence & judgment improvement (stdlib only).
+"""Chief of Staff Agent v7 — strategic simulation, orchestration & governance (stdlib only).
 Usage: python3 chief_of_staff_agent.py [MODE]
 Core: --demo | --dashboard | --monthly-review | --weekly-review | --strategy-memo
       --multi-agent-review | --ai-review | --antifragile-review | --scenario
-V5:   --projects | --project-review | --opportunities | --opportunity-review
-      --decisions | --experiments | --risks | --risk-review | --relationships
-      --relationship-review | --principles
-V6:   --outcomes | --evidence | --assumptions | --predictions | --calibration-review
-      --decision-quality-review | --leverage-review | --constraint-review
-      --eighty-twenty-review | --hypotheses | --bias-review | --scorecard
-      --red-team-review | --board-memo | --kill-list | --assets | --doctrine
+V7:   --simulate [--horizon N] | --tradeoff | --rhythm | --rhythm-review
+      --identity-review | --capital-review | --plan-30 | --plan-90 | --plan-365
+      --backcast | --okrs | --okr-review | --rebalance
+      --integrity-check | --repair-integrity | --search QUERY
+      --report-pack | --ai-council | --migrate
 Other: --json | --export FILE | --save-history | --reflect YYYY-MM-DD | --days N
 """
 
@@ -586,6 +584,278 @@ def list_doctrine():
         bias=f" [{d.related_bias}]" if d.related_bias else""
         print(f"  {d.doctrine_id}  {d.principle:<50s}{bias}")
         print(f"       Rationale: {d.rationale[:80]}")
+    print(SEP)
+
+# ======================================================================
+# V7 — IDENTITY
+# ======================================================================
+def load_identities():
+    data=load_records(IDENTITY_PATH);return[StrategicIdentity(**i)for i in data]if data else[]
+def save_identities(ids):save_records(IDENTITY_PATH,[i.__dict__ for i in ids])
+
+def add_identity_interactive():
+    ids=load_identities()
+    print("\n  ADD STRATEGIC IDENTITY");print("-"*40)
+    stmt=input("  Statement: ").strip()
+    print("  Identity roles:");roles=list(DEFAULT_IDENTITIES.keys())
+    [print(f"    {i+1}. {r}")for i,r in enumerate(roles)]
+    try:c=int(input("  Role (1-{0}): ".format(len(roles))));role=roles[c-1]
+    except:role="world_class_researcher"
+    i=StrategicIdentity(identity_id=uid(),name=stmt[:40],statement=stmt,role=role,long_term_aim=DEFAULT_IDENTITIES.get(role,""),last_reviewed=today_str())
+    ids.append(i);save_identities(ids);print(f"  Identity added. ({i.identity_id})")
+
+def list_identities():
+    ids=load_identities()
+    if not ids:print("  No identities. Use --add-identity.");return
+    print(f"\n  STRATEGIC IDENTITIES ({len(ids)})");print(SEP)
+    for i in ids:print(f"  {i.identity_id}  {i.name[:50]}  role:{i.role}  status:{i.status}")
+    print(SEP)
+
+# ======================================================================
+# V7 — CAPITAL
+# ======================================================================
+def load_capitals():
+    data=load_records(CAPITAL_PATH);return[StrategicCapital(**c)for c in data]if data else[]
+def save_capitals(cs):save_records(CAPITAL_PATH,[c.__dict__ for c in cs])
+
+def add_capital_interactive():
+    cs=load_capitals()
+    print("\n  ADD STRATEGIC CAPITAL");print("-"*40)
+    print("  Capital types:");[print(f"    {i+1}. {t}")for i,t in enumerate(CAPITAL_TYPES)]
+    try:c=int(input("  Type (1-{0}): ".format(len(CAPITAL_TYPES))));ct=CAPITAL_TYPES[c-1]
+    except:ct="intellectual_capital"
+    name=input("  Name: ").strip()
+    score=_get_int("  Current score (1-10): ");c=StrategicCapital(capital_id=uid(),capital_type=ct,name=name,current_score=score,last_reviewed=today_str())
+    cs.append(c);save_capitals(cs);print(f"  Capital '{name}' added.")
+
+def list_capitals():
+    cs=load_capitals()
+    if not cs:print("  No capital entries. Use --add-capital.");return
+    print(f"\n  STRATEGIC CAPITAL ({len(cs)})");print(SEP)
+    for c in cs:print(f"  {c.capital_id}  {c.name:<30s}  type:{c.capital_type}  score:{c.current_score}")
+    print(SEP)
+
+# ======================================================================
+# V7 — RHYTHM
+# ======================================================================
+def add_rhythm_interactive():
+    rs=load_rhythms()
+    print("\n  ADD OPERATING RHYTHM");print("-"*40)
+    r=Rhythm(rhythm_id=uid(),name=input("  Name: ").strip(),cadence=input("  Cadence (daily/weekly/monthly/quarterly/yearly): ").strip(),description=input("  Description: ").strip(),trigger=input("  Trigger: ").strip(),expected_output=input("  Expected output: ").strip())
+    rs.append(r);save_rhythms(rs);print(f"  Rhythm '{r.name}' added.")
+
+def list_rhythms_cmd():
+    rs=load_rhythms()
+    if not rs:print("  No rhythms. Use --add-rhythm.");return
+    print(f"\n  OPERATING RHYTHM ({len(rs)})");print(SEP)
+    for r in rs:print(f"  {r.rhythm_id}  {r.name:<35s}  {r.cadence:<10s}  status:{r.status}")
+    print(SEP)
+
+def rhythm_review_cmd():
+    rs=load_rhythms();rr=rhythm_review(rs)
+    print(f"\n  RHYTHM REVIEW");print(SEP)
+    print(f"  {rr['summary']}")
+    if rr["overdue"]:
+        print(f"\n  OVERDUE:")
+        for o in rr["overdue"]:print(f"    - {o['name']} ({o['cadence']}): last done {o['last_completed']} ({o['days_overdue']} days)")
+    print(SEP)
+
+# ======================================================================
+# V7 COMMANDS
+# ======================================================================
+def simulate_cmd(horizon=90):
+    data={"config":load_config(),"records":load_recent_history(30),"projects":load_projects(),"risks":load_risks(),"outcomes":load_outcomes(),"opportunities":load_opps()}
+    r=scenario_simulator(horizon,data)
+    print(f"\n  STRATEGIC SCENARIO SIMULATOR — {horizon}-DAY HORIZON");print(SEP)
+    for sr in r["scenarios"]:
+        flag=" ★ BEST" if sr==r["best"] else""
+        print(f"  {sr.path_name:<45s} Score:{sr.scenario_score}{flag}")
+        print(f"    Alignment:{sr.strategic_alignment} Compounding:{sr.expected_compounding} OppCapture:{sr.opportunity_capture} RiskCtrl:{sr.risk_control} Feasibility:{sr.feasibility} Energy:{sr.energy_sustainability}")
+        print(f"    Allocation: "+" ".join(f"{g}:{sr.planned_time_allocation.get(g,0)}%"for g in STRATEGIC_GOALS))
+        print(f"    Bottleneck: {sr.likely_bottleneck} | Correction: {sr.recommended_correction}")
+    print(SEP)
+    best=r["best"]
+    print(f"  BEST: {best.path_name} (score: {best.scenario_score})")
+    print(f"  Reason: {best.recommended_correction}")
+    # Extra warning for best path
+    warnings=[]
+    if best.planned_time_allocation.get("public_influence",0)<10:warnings.append("May under-invest in public influence.")
+    if best.planned_time_allocation.get("deeptech_venture",0)<10:warnings.append("May under-invest in deep-tech venture work.")
+    if best.risk_exposure>=7:warnings.append("Risk exposure is elevated.")
+    if warnings:print(f"  Warning: {' '.join(warnings)}")
+    print(SEP)
+
+def tradeoff_cmd():
+    print("\n  STRATEGIC TRADE-OFF ANALYSIS");print(SEP)
+    a={"label":input("  Option A name: ").strip(),"expected_value":_get_int("    Expected value (1-10): "),"risk":_get_int("    Risk level (1-10, higher=riskier): "),"strategic_goal_served_score":_get_int("    Strategic goal alignment (1-10): "),"opportunity_cost":_get_int("    Opportunity cost (1-10, higher=more costly): "),"evidence_strength":_get_int("    Evidence strength (1-10): ")}
+    print("  Reversibility:");[print(f"    {i+1}. {k}: {v}")for i,(k,v)in enumerate(REVERSIBILITY_CLASSES.items())]
+    try:c=int(input("    Choice (1-3): "));a["reversibility_class"]=list(REVERSIBILITY_CLASSES.keys())[c-1]
+    except:a["reversibility_class"]="two_way_door"
+    a["uncertainty"]=input("    Uncertainty (low/medium/high): ").strip()or"medium"
+    a["hidden_cost"]=input("    Hidden cost (optional): ").strip()
+    b={"label":input("\n  Option B name: ").strip(),"expected_value":_get_int("    Expected value (1-10): "),"risk":_get_int("    Risk level (1-10): "),"strategic_goal_served_score":_get_int("    Strategic goal alignment (1-10): "),"opportunity_cost":_get_int("    Opportunity cost (1-10): "),"evidence_strength":_get_int("    Evidence strength (1-10): ")}
+    try:c=int(input("    Reversibility (1-3, default 2): "));b["reversibility_class"]=list(REVERSIBILITY_CLASSES.keys())[c-1]
+    except:b["reversibility_class"]="two_way_door"
+    b["uncertainty"]=input("    Uncertainty (low/medium/high): ").strip()or"medium";b["hidden_cost"]=input("    Hidden cost (optional): ").strip()
+    c_opt=None
+    if _get_yn("\n  Add Option C? (y/n): "):
+        c_opt={"label":input("  Option C name: ").strip(),"expected_value":_get_int("    Expected value (1-10): "),"risk":_get_int("    Risk level (1-10): "),"strategic_goal_served_score":_get_int("    Strategic goal alignment (1-10): "),"opportunity_cost":_get_int("    Opportunity cost (1-10): "),"evidence_strength":_get_int("    Evidence strength (1-10): "),"reversibility_class":"two_way_door","uncertainty":"medium","hidden_cost":""}
+    r=tradeoff_engine(a,b,c_opt)
+    print(f"\n  TRADE-OFF RESULTS");print(SEP)
+    for o in r["options"]:
+        print(f"  {o['option']}: {o['label']} (score: {o['score']})")
+        print(f"    Value:{o['expected_value']} Risk:{o['risk']} OppCost:{o['opportunity_cost']} Evidence:{o['evidence_strength']} Reversibility:{o['reversibility_class']}")
+    print(f"\n  {r['recommendation']}")
+    print(f"  {r['what_would_change']}");print(SEP)
+
+def identity_review_cmd():
+    ids=load_identities()
+    if not ids:
+        print("\n  No identities defined. Creating defaults...")
+        for role,aim in DEFAULT_IDENTITIES.items():
+            ids.append(StrategicIdentity(identity_id=uid(),name=role.replace("_"," ").title(),statement=aim,role=role.replace("_"," ").title(),long_term_aim=aim,last_reviewed=today_str()))
+        save_identities(ids);print(f"  Created {len(ids)} default identities.")
+    records=load_recent_history(30);tasks=[];result=demo(to_json=True)
+    if result:tasks=[Task(**t)for t in result.get("ranked",[])]
+    r=identity_review(ids,records,tasks,[])
+    print(f"\n  IDENTITY ALIGNMENT REVIEW");print(SEP)
+    if r.get("message"):print(f"  {r['message']}");print(SEP);return
+    for ident in r["identities"]:
+        print(f"  [{ident['verdict'].upper()}] {ident['identity']} ({ident['role']})")
+        if ident["alignment"]:[print(f"    + {a}")for a in ident["alignment"]]
+        if ident["drift"]:[print(f"    - {d}")for d in ident["drift"]]
+        if ident["corrections"]:[print(f"    → {c}")for c in ident["corrections"]]
+    print(SEP)
+
+def capital_review_cmd():
+    cs=load_capitals();r=capital_review(cs)
+    print(f"\n  STRATEGIC CAPITAL REVIEW");print(SEP)
+    if r.get("message"):print(f"  {r['message']}");print(SEP);return
+    print(f"  {r['summary']}")
+    if r["top_3"]:
+        print(f"\n  TOP 3 CAPITALS:");[print(f"    {c['name']} ({c['type']}): {c['score']}/10")for c in r["top_3"]]
+    if r["decaying_details"]:
+        print(f"\n  DECAYING CAPITALS:");[print(f"    {c['name']} ({c['type']}): {c['score']}/10 — Increase via: {c['how_to_increase']}")for c in r["decaying_details"]]
+    if r["recommendations"]:print(f"\n  RECOMMENDATIONS:");[print(f"    - {rec}")for rec in r["recommendations"]]
+    print(SEP)
+
+def plan_cmd(horizon):
+    data=gather_all_data();r=plan_generator(horizon,data)
+    print(f"\n  {horizon}-DAY STRATEGIC PLAN");print(SEP)
+    print(f"  THESIS: {r['strategic_thesis']}")
+    sections=[("OUTCOMES","top_outcomes"),("PROJECTS TO PROTECT","projects_to_protect"),("OPPORTUNITIES","opportunities_to_pursue"),("RELATIONSHIPS","relationships_to_strengthen"),("ASSETS TO BUILD","assets_to_build"),("RISKS TO MITIGATE","risks_to_mitigate"),("ASSUMPTIONS TO TEST","assumptions_to_test"),("EXPERIMENTS","experiments_to_run"),("KILL-LIST","kill_list_items"),("SUCCESS METRICS","success_metrics")]
+    for label,key in sections:
+        items=r.get(key,[])
+        if items:print(f"\n  {label}:");[print(f"    - {item}")for item in items[:5]]
+    print(SEP)
+
+def backcast_cmd():
+    print("\n  STRATEGIC BACKCASTING");print(SEP)
+    outcome=input("  Desired outcome: ").strip();target=input("  Target date (YYYY-MM-DD): ").strip()
+    why=input("  Why it matters: ").strip();metric=input("  Success metric: ").strip()
+    r=backcast_generator(outcome,target,why,metric)
+    print(f"\n  BACKCAST: {outcome}");print(SEP)
+    print(f"  Target: {r['target_date']} ({r['total_months']} months)")
+    print(f"  Success metric: {r['success_metric']}")
+    print(f"\n  MILESTONES:");[print(f"    {m}")for m in r["milestones"]]
+    print(f"\n  WEEKLY RHYTHM: {r['required_weekly_rhythm']}")
+    print(f"\n  LEADING INDICATORS:");[print(f"    - {li}")for li in r["leading_indicators"]]
+    print(f"\n  RISKS:");[print(f"    - {risk}")for risk in r["risks"]]
+    print(f"\n  FIRST ACTION: {r['first_next_action']}");print(SEP)
+
+def okr_review_cmd():
+    os=load_okrs();r=okr_review(os)
+    print(f"\n  OKR REVIEW");print(SEP)
+    if r.get("message"):print(f"  {r['message']}");print(SEP);return
+    print(f"  {r['summary']}")
+    for obj in r["objectives"]:
+        print(f"\n  {obj['objective']} ({obj['period']}) — {obj['avg_progress']:.0f}% progress")
+        for kr in obj["key_results"]:
+            flag="⚠ BLOCKED" if kr["status"]=="blocked" else("◈ AT RISK" if kr["status"]=="at_risk" else"✓")
+            print(f"    {flag} {kr['description'][:60]}: {kr['progress']:.0f}%")
+        if obj["blocked_count"]:print(f"    → {obj['next_action']}")
+    print(SEP)
+
+def add_okr_interactive():
+    os=load_okrs()
+    print("\n  ADD OKR");print("-"*40)
+    o=OKR(objective_id=uid(),title=input("  Objective: ").strip(),start_date=today_str())
+    print("  Strategic goals:");[print(f"    {i+1}. {g}")for i,g in enumerate(STRATEGIC_GOALS)]
+    try:c=int(input("  Goal (1-7): "));o.strategic_goal=STRATEGIC_GOALS[c-1]
+    except:pass
+    o.period=input("  Period (monthly/quarterly/yearly): ").strip()or"quarterly"
+    o.end_date=(date.today()+timedelta(days=90)).isoformat()
+    o.confidence=_get_int("  Confidence (1-10): ")
+    print("  Key results (enter blank description to finish):")
+    while True:
+        desc=input("    KR description: ").strip()
+        if not desc:break
+        tgt=float(input("    Target value: ").strip()or"100")
+        kr=KeyResult(kr_id=uid(),description=desc,target_value=tgt,start_value=0,last_updated=today_str())
+        o.key_results.append(kr)
+    os.append(o);save_okrs(os);print(f"  OKR '{o.title}' added.")
+
+def list_okrs_cmd():
+    os=load_okrs()
+    if not os:print("  No OKRs. Use --add-okr.");return
+    print(f"\n  OKRs ({len(os)})");print(SEP)
+    for o in os:
+        kr_count=len(o.key_results)if isinstance(o.key_results,list)else 0
+        print(f"  {o.objective_id}  {o.title[:50]}  goal:{o.strategic_goal}  period:{o.period}  KRs:{kr_count}  status:{o.status}")
+    print(SEP)
+
+def rebalance_cmd():
+    records=load_recent_history(30);cfg=load_config();okrs=load_okrs();capitals=load_capitals()
+    r=rebalance_engine(records,cfg,okrs,[],capitals)
+    print(f"\n  PORTFOLIO REBALANCE");print(SEP)
+    print(f"  {r['summary']}")
+    if r["adjustments"]:
+        print(f"\n  RECOMMENDED ADJUSTMENTS:")
+        for a in r["adjustments"]:print(f"    - {a['action']}")
+    print(f"\n  ALLOCATION vs BASELINE:");print(f"  {'Goal':<28s} {'Actual':>7s} {'Target':>7s} {'Gap':>7s}")
+    for g in STRATEGIC_GOALS:
+        actual=r["actual_allocation"].get(g,0);target=r["baseline"].get(g,15);gap=round(actual-target,1)
+        print(f"  {g:<28s} {actual:>6.1f}% {target:>6d}% {gap:>+6.1f}%")
+    print(SEP)
+
+def integrity_check_cmd():
+    r=integrity_check()
+    print(f"\n  DATA INTEGRITY CHECK");print(SEP)
+    print(f"  {r['summary']}")
+    if r["issues"]:[print(f"    - {i}")for i in r["issues"]]
+    if r["total_issues"]>0:print(f"\n  Run --repair-integrity to fix safe issues.")
+    print(SEP)
+
+def repair_integrity_cmd():
+    r=repair_integrity()
+    print(f"\n  INTEGRITY REPAIR");print(SEP)
+    print(f"  {r['summary']}")
+    if r["repairs"]:[print(f"    - {rp}")for rp in r["repairs"]]
+    print(SEP)
+
+def search_cmd(query):
+    r=local_search(query)
+    print(f"\n  SEARCH: '{query}'");print(SEP)
+    print(f"  {r['summary']}")
+    for i,res in enumerate(r["results"],1):print(f"  {i}. [{res['store']}] {res['match']}")
+    print(SEP)
+
+def report_pack_cmd():
+    r=generate_report_pack()
+    print(f"\n  REPORT PACK GENERATED");print(SEP)
+    print(f"  Directory: {r['export_dir']}")
+    print(f"  Files ({r['count']}):")
+    for f in r["files"]:print(f"    - {f}")
+    print(SEP)
+
+def ai_council_cmd():
+    print(ai_council_prompt())
+
+def migrate_cmd():
+    r=migrate_all_stores()
+    print(f"\n  MIGRATION V6 → V7");print(SEP)
+    print(f"  {r['summary']}")
+    for store,status in r["results"].items():print(f"    {store}: {status}")
     print(SEP)
 
 # ======================================================================
@@ -1297,12 +1567,39 @@ def main():
     g.add_argument("--add-asset",action="store_true",help="Add compounding asset")
     g.add_argument("--doctrine",action="store_true",help="List personal doctrine")
     g.add_argument("--add-doctrine",action="store_true",help="Add personal doctrine entry")
+    # V7 commands
+    g.add_argument("--simulate",action="store_true",help="Scenario simulator")
+    g.add_argument("--tradeoff",action="store_true",help="Strategic trade-off analysis")
+    g.add_argument("--rhythm",action="store_true",help="List operating rhythm")
+    g.add_argument("--add-rhythm",action="store_true",help="Add rhythm item")
+    g.add_argument("--rhythm-review",action="store_true",help="Rhythm review")
+    g.add_argument("--identity-review",action="store_true",help="Identity alignment review")
+    g.add_argument("--add-identity",action="store_true",help="Add strategic identity")
+    g.add_argument("--identities",action="store_true",help="List identities")
+    g.add_argument("--capital",action="store_true",help="List strategic capital")
+    g.add_argument("--add-capital",action="store_true",help="Add strategic capital")
+    g.add_argument("--capital-review",action="store_true",help="Capital review")
+    g.add_argument("--plan-30",action="store_true",help="30-day strategic plan")
+    g.add_argument("--plan-90",action="store_true",help="90-day strategic plan")
+    g.add_argument("--plan-365",action="store_true",help="365-day strategic plan")
+    g.add_argument("--backcast",action="store_true",help="Strategic backcasting")
+    g.add_argument("--okrs",action="store_true",help="List OKRs")
+    g.add_argument("--add-okr",action="store_true",help="Add OKR")
+    g.add_argument("--okr-review",action="store_true",help="OKR review")
+    g.add_argument("--rebalance",action="store_true",help="Portfolio rebalance")
+    g.add_argument("--integrity-check",action="store_true",help="Data integrity check")
+    g.add_argument("--repair-integrity",action="store_true",help="Repair data integrity")
+    g.add_argument("--search",type=str,metavar="QUERY",help="Search across all stores")
+    g.add_argument("--report-pack",action="store_true",help="Generate report pack")
+    g.add_argument("--ai-council",action="store_true",help="AI council prompt")
+    g.add_argument("--migrate",action="store_true",help="Migrate stores V6→V7")
     g.add_argument("--reflect",type=str,metavar="YYYY-MM-DD",help="End-of-day reflection")
     g.add_argument("--project",type=str,metavar="PROJECT_ID",help="Project detail")
     p.add_argument("--json",action="store_true",help="Clean JSON output")
     p.add_argument("--export",type=str,metavar="FILE",help="Save JSON/text to FILE")
     p.add_argument("--save-history",action="store_true",help="Persist daily plan")
     p.add_argument("--days",type=int,default=7,help="Days for review (default 7)")
+    p.add_argument("--horizon",type=int,default=90,help="Horizon in days for simulation (default 90)")
     args=p.parse_args()
 
     if args.reflect: reflect(args.reflect); return
@@ -1351,6 +1648,32 @@ def main():
     if args.red_team_review: red_team_review_cmd(); return
     if args.board_memo: board_memo_cmd(); return
     if args.kill_list: kill_list_cmd(); return
+    # V7 dispatch
+    if args.simulate: simulate_cmd(args.horizon); return
+    if args.tradeoff: tradeoff_cmd(); return
+    if args.rhythm: list_rhythms_cmd(); return
+    if args.add_rhythm: add_rhythm_interactive(); return
+    if args.rhythm_review: rhythm_review_cmd(); return
+    if args.identity_review: identity_review_cmd(); return
+    if args.add_identity: add_identity_interactive(); return
+    if args.identities: list_identities(); return
+    if args.capital: list_capitals(); return
+    if args.add_capital: add_capital_interactive(); return
+    if args.capital_review: capital_review_cmd(); return
+    if args.plan_30: plan_cmd(30); return
+    if args.plan_90: plan_cmd(90); return
+    if args.plan_365: plan_cmd(365); return
+    if args.backcast: backcast_cmd(); return
+    if args.okrs: list_okrs_cmd(); return
+    if args.add_okr: add_okr_interactive(); return
+    if args.okr_review: okr_review_cmd(); return
+    if args.rebalance: rebalance_cmd(); return
+    if args.integrity_check: integrity_check_cmd(); return
+    if args.repair_integrity: repair_integrity_cmd(); return
+    if args.search: search_cmd(args.search); return
+    if args.report_pack: report_pack_cmd(); return
+    if args.ai_council: ai_council_cmd(); return
+    if args.migrate: migrate_cmd(); return
     if args.dashboard: dashboard(); return
     if args.monthly_review: monthly_review(days=args.days); return
     if args.weekly_review: weekly_review(days=args.days); return
