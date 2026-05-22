@@ -2,7 +2,7 @@
 
 **Version 10** | Python 3.12+ | Standard Library Only | No External APIs Required
 
-A human-governed strategic autonomy system that functions as a personal Chief of Staff for researchers, PIs, founders, and knowledge workers. Tracks strategy, orchestrates execution, measures performance, and governs operations — all from the command line.
+A human-governed strategic autonomy system that functions as a personal Chief of Staff for researchers, PIs, founders, and knowledge workers. Available as a **standalone Windows .exe** (no Python needed), a **desktop GUI**, or a **command-line tool** — tracks strategy, orchestrates execution, measures performance, and governs operations.
 
 ---
 
@@ -10,6 +10,9 @@ A human-governed strategic autonomy system that functions as a personal Chief of
 
 1. [Overview](#overview)
 2. [Quick Start](#quick-start)
+   - [Option A: Windows Standalone .exe (no Python)](#option-a-windows-standalone-exe-no-python-needed)
+   - [Option B: Run with Python](#option-b-run-with-python-any-os)
+   - [Option C: Build your own .exe](#option-c-build-your-own-exe)
 3. [Architecture](#architecture)
 4. [System Design](#system-design)
    - [Version Progression](#version-progression)
@@ -56,40 +59,76 @@ It replaces fragmented task managers, spreadsheets, and mental tracking with a s
 
 ### What This Is
 
-- A **strategic command center** for knowledge work
+- A **strategic command center** for knowledge work — available as .exe, GUI, or CLI
 - A **human-in-the-loop autonomy system** that recommends but never acts externally without approval
 - A **personal data system** — all data stored locally as versioned JSON
 - A **transparent reasoning tool** — every score, recommendation, and decision is explainable
+- A **portable application** — the .exe runs from any folder, USB drive, or cloud-synced directory
 
 ### What This Is NOT
 
 - A task manager (Todoist, Things, etc.) — it *coordinates* tasks but is not a checklist
 - An AI agent that acts autonomously — it generates prompts for AI but never calls APIs
 - A cloud service — everything runs locally, offline, with no telemetry
+- A Python-only tool — the standalone .exe requires zero dependencies, not even Python
 
 ---
 
 ## Quick Start
+
+### Option A: Windows Standalone .exe (no Python needed)
+
+1. Go to **[GitHub Releases](https://github.com/ph7klw76/Chief_of_staff_agent/releases)**
+2. Download `ChiefOfStaff_v10.zip` (~10 MB)
+3. Extract the zip anywhere (Desktop, Documents, USB drive)
+4. Double-click `ChiefOfStaff.exe` to launch the desktop GUI
+5. Or open a terminal in that folder and run `ChiefOfStaff-CLI.exe --demo`
+
+**No installation. No Python. No dependencies.** The zip contains two standalone executables:
+
+| File | What to do | Description |
+|---|---|---|
+| `ChiefOfStaff.exe` | **Double-click** | Full desktop GUI with dashboard, actions, reviews, data entry |
+| `ChiefOfStaff-CLI.exe` | **Run from cmd** | All 150+ CLI commands (`--demo`, `--dashboard`, `--weekly-review`, etc.) |
+
+All data is stored as JSON files in the same folder. Move the folder anywhere — it's fully portable.
+
+> **Note**: If the zip doesn't contain the .exe files yet, use Option B (run with Python) and then Option C (build the .exe yourself in 2 minutes).
+
+### Option B: Run with Python (any OS)
 
 ```bash
 # Clone the repository
 git clone https://github.com/ph7klw76/Chief_of_staff_agent.git
 cd Chief_of_staff_agent
 
-# Run the demo
-python3 chief_of_staff_agent.py --demo
+# Launch the GUI (requires tkinter — included with python.org installer)
+python chief_of_staff_gui.py
 
-# View the dashboard
-python3 chief_of_staff_agent.py --dashboard
+# Or use the command line
+python chief_of_staff_agent.py --demo
+python chief_of_staff_agent.py --dashboard
 
 # Run the test suite
-python3 -m unittest
+python -m unittest
 
 # See all available commands
-python3 chief_of_staff_agent.py --help
+python chief_of_staff_agent.py --help
 ```
 
-**Requirements**: Python 3.12 or later. No pip installs. No virtual environment needed. Standard library only.
+**Requirements**: Python 3.12+. No pip installs. No virtual environment. Standard library only.
+
+### Option C: Build your own .exe
+
+Already have the repo and Python? Build standalone .exe files in one step:
+
+```cmd
+build_exe.bat
+```
+
+This produces `dist\ChiefOfStaff.exe` (GUI) and `dist\ChiefOfStaff-CLI.exe` (CLI). Copy either .exe to any Windows machine — no Python needed on the target.
+
+Requires an internet connection the first time (to install PyInstaller via pip).
 
 ---
 
@@ -99,38 +138,28 @@ python3 chief_of_staff_agent.py --help
 Chief_of_staff_agent/
 ├── chief_of_staff_core.py          # All data models, scoring, analysis engines (3,226 lines)
 ├── chief_of_staff_agent.py         # CLI interface, command dispatch (2,619 lines)
+├── chief_of_staff_gui.py           # tkinter desktop GUI application (500+ lines)
 ├── test_chief_of_staff_agent.py    # 189 tests in 75 test classes (1,438 lines)
+├── launch_gui.bat                  # Windows double-click launcher (dev mode, needs Python)
+├── build_exe.bat                   # One-click .exe builder (needs Python + internet once)
+├── chief_of_staff_gui.spec         # PyInstaller spec -> ChiefOfStaff.exe (windowed GUI)
+├── chief_of_staff_cli.spec         # PyInstaller spec -> ChiefOfStaff-CLI.exe (console)
+├── README.md
 ├── chief_of_staff_projects.json     # Project records
 ├── chief_of_staff_opportunities.json
-├── chief_of_staff_risks.json
-├── chief_of_staff_relationships.json
-├── chief_of_staff_decisions.json
-├── chief_of_staff_experiments.json
-├── chief_of_staff_evidence.json
-├── chief_of_staff_assumptions.json
-├── chief_of_staff_predictions.json
-├── chief_of_staff_outcomes.json
-├── chief_of_staff_assets.json
-├── chief_of_staff_doctrine.json
-├── chief_of_staff_workflows.json
-├── chief_of_staff_metrics.json
-├── chief_of_staff_impact.json
-├── chief_of_staff_indicators.json
-├── chief_of_staff_policies.json
-├── chief_of_staff_contracts.json
-├── chief_of_staff_command_queue.json
-├── chief_of_staff_execution_queue.json
-├── chief_of_staff_captures.json
-├── ... (additional store files)
-└── README.md
+├── ... (22+ additional JSON store files)
+└── dist/                            # Built .exe files (gitignored)
+    ├── ChiefOfStaff.exe             # Standalone GUI -- double-click to launch
+    └── ChiefOfStaff-CLI.exe         # Standalone CLI -- run from cmd
 ```
 
-**Two-module design:**
+**Three-module design:**
 
 | Module | Purpose | Contents |
 |---|---|---|
 | `chief_of_staff_core.py` | Pure logic | 47 dataclasses, ~80 scoring/analysis functions, defaults, storage helpers |
-| `chief_of_staff_agent.py` | Interface | CLI argument parsing, command dispatch, interactive modes, output formatting |
+| `chief_of_staff_agent.py` | CLI interface | CLI argument parsing, command dispatch, interactive modes, output formatting |
+| `chief_of_staff_gui.py` | Desktop GUI | tkinter application with 4 tabs, menu bar, dialogs, dashboard (optional, additive) |
 
 All state is stored in schema-versioned JSON files. No database, no server, no cloud.
 
@@ -659,6 +688,15 @@ python3 chief_of_staff_agent.py --export-context "collaboration strategy" --reda
 ---
 
 ## FAQ
+
+**Q: Can I use this without installing Python?**
+A: Yes. Download the standalone `ChiefOfStaff_v10.zip` from [GitHub Releases](https://github.com/ph7klw76/Chief_of_staff_agent/releases), extract it, and double-click `ChiefOfStaff.exe`. No Python, no installation, no dependencies.
+
+**Q: Can I build my own .exe?**
+A: Yes. Run `build_exe.bat` on any Windows machine with Python 3.12+. It produces `ChiefOfStaff.exe` (GUI) and `ChiefOfStaff-CLI.exe` (CLI) in the `dist\` folder in about 2 minutes.
+
+**Q: Is there a GUI or just command line?**
+A: Both. `chief_of_staff_gui.py` provides a full tkinter desktop application with 4 tabs (Dashboard, Quick Actions, Reviews, Data). Double-click `ChiefOfStaff.exe` on Windows or run `python chief_of_staff_gui.py` on any OS. The CLI and GUI share the same JSON data stores — use whichever you prefer.
 
 **Q: Why not use a real database?**
 A: The system is designed for a single user. JSON files are portable, inspectable, version-controllable, and require zero setup. You can `cat chief_of_staff_projects.json` and read your data directly.
