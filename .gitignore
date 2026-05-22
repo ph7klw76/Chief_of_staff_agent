@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+chief_of_staff_config.json
+chief_of_staff_history/
+*.json
+!test_*.json
