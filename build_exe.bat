@@ -3,7 +3,28 @@ title Building Chief of Staff Agent .exe
 cd /d "%~dp0"
 echo =============================================================
 echo   Chief of Staff Agent — Build Windows .exe
+echo   Working dir: %cd%
 echo =============================================================
+echo.
+
+:: Verify required source files exist in current directory
+if not exist "chief_of_staff_agent.py" (
+    echo ERROR: chief_of_staff_agent.py not found in %cd%
+    echo This .bat must be in the same folder as the source files.
+    echo Current folder contents:
+    dir /b *.py 2>nul
+    echo.
+    pause & exit /b 1
+)
+if not exist "chief_of_staff_gui.py" (
+    echo WARNING: chief_of_staff_gui.py not found — GUI build will be skipped.
+)
+if not exist "chief_of_staff_core.py" (
+    echo ERROR: chief_of_staff_core.py not found — cannot build without it.
+    pause & exit /b 1
+)
+
+echo Files found. Proceeding with build...
 echo.
 
 :: Check Python
