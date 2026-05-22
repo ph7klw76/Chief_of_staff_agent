@@ -1083,3 +1083,184 @@ class TestV8OnePage(unittest.TestCase):
         r = one_page()
         self.assertIn("today", r)
         self.assertIn("next_best_move", r)
+
+
+# ======================================================================
+# V9 TESTS
+# ======================================================================
+class TestV9Metrics(unittest.TestCase):
+    def test_metric_creation(self):
+        ms = load_metrics()
+        self.assertIsInstance(ms, list)
+
+    def test_metric_review_empty(self):
+        r = metrics_review()
+        self.assertIn("total", r)
+
+    def test_metric_update_values(self):
+        m = Metric(metric_id=uid(), name="Test Metric", target_value=10, current_value=5)
+        ms = load_metrics(); ms.append(m); save_metrics(ms)
+        r = metrics_review()
+        self.assertIn("below_target", r)
+
+
+class TestV9Impact(unittest.TestCase):
+    def test_impact_record_creation(self):
+        imp = Impact(impact_id=uid(), title="Test Impact", impact_type="paper_submitted",
+                     strategic_goal="research_publication", magnitude=7)
+        imps = load_impacts(); imps.append(imp); save_impacts(imps)
+        r = impact_review()
+        self.assertIn("total", r)
+
+    def test_impact_review_empty(self):
+        old = load_impacts()
+        save_impacts([])
+        r = impact_review()
+        self.assertIn("message", r)
+        save_impacts(old)
+
+
+class TestV9ROI(unittest.TestCase):
+    def test_roi_review_ranks_items(self):
+        wfs = load_workflows()
+        r = roi_review([], wfs, [], [], [], [])
+        self.assertIn("high_roi", r)
+        self.assertIn("low_roi", r)
+
+
+class TestV9WorkflowPerformance(unittest.TestCase):
+    def test_workflow_run_logging(self):
+        wr = log_workflow_run("wf_grant_concept", 100, 120, True, "Concept note", 7)
+        self.assertEqual(wr.workflow_id, "wf_grant_concept")
+
+    def test_workflow_performance_empty(self):
+        old = load_workflow_runs()
+        save_workflow_runs([])
+        r = workflow_performance()
+        self.assertIn("message", r)
+        save_workflow_runs(old)
+
+
+class TestV9EstimationAccuracy(unittest.TestCase):
+    def test_estimation_accuracy_calculation(self):
+        e = Estimate(estimate_id=uid(), entity_type="workflow", estimate_type="time",
+                     estimated_value=60, actual_value=90, error_percent=50, lesson="Underestimated")
+        es = load_estimates(); es.append(e); save_estimates(es)
+        r = estimate_review()
+        self.assertIn("total", r)
+
+
+class TestV9Reforecast(unittest.TestCase):
+    def test_reforecast_empty(self):
+        r = reforecast([], [], [], [], [])
+        self.assertIn("forecasts", r)
+
+
+class TestV9Velocity(unittest.TestCase):
+    def test_velocity_review(self):
+        r = velocity_review([], [], [], [], [])
+        self.assertIn("message", r)
+
+
+class TestV9Indicators(unittest.TestCase):
+    def test_indicator_review(self):
+        r = indicator_review()
+        self.assertIn("total", r)
+        self.assertIn("leading", r)
+
+
+class TestV9ReviewBoard(unittest.TestCase):
+    def test_review_board_generation(self):
+        data = {"projects": [], "workflows": load_workflows(), "relationships": [],
+                "opportunities": [], "assets": [], "metrics": load_metrics(),
+                "records": [], "queue": [], "impact": [], "workflow_runs": [],
+                "estimates": [], "okrs": [], "predictions": [], "risks": []}
+        r = review_board(data)
+        self.assertIn("strategic_thesis", r)
+
+
+class TestV9Contracts(unittest.TestCase):
+    def test_contract_creation(self):
+        c = Contract(contract_id=uid(), title="Test Contract", strategic_goal="grant_funding",
+                     commitment="Write 3 hours per week", start_date=today_str())
+        cs = load_contracts(); cs.append(c); save_contracts(cs)
+        r = contract_review()
+        self.assertIn("active", r)
+
+    def test_contract_review_empty(self):
+        old = load_contracts()
+        save_contracts([])
+        r = contract_review()
+        self.assertIn("message", r)
+        save_contracts(old)
+
+
+class TestV9Adherence(unittest.TestCase):
+    def test_adherence_review(self):
+        r = adherence_review(load_rhythms(), [], [], [], [])
+        self.assertIn("adherence_score", r)
+
+
+class TestV9Rubrics(unittest.TestCase):
+    def test_rubric_creation(self):
+        rbs = load_rubrics()
+        self.assertGreaterEqual(len(rbs), 9)
+
+    def test_output_scoring(self):
+        os = score_output("Test Output", "grant_concept_note", "grant_concept_note", [7, 8, 6, 9, 7])
+        self.assertEqual(os.output_title, "Test Output")
+        self.assertGreater(os.overall_score, 0)
+
+    def test_score_output_persists(self):
+        os = score_output("Test Output 2", "industry_email", None, [8, 7, 9, 6, 8])
+        oss = load_output_scores(); oss.append(os); save_output_scores(oss)
+        self.assertTrue(any(o.output_title == "Test Output 2" for o in load_output_scores()))
+
+
+class TestV9Attribution(unittest.TestCase):
+    def test_attribution_review_empty(self):
+        r = attribution_review([], [], [], [], [])
+        self.assertIn("message", r)
+
+
+class TestV9Flywheel(unittest.TestCase):
+    def test_flywheel_detection(self):
+        r = flywheel_review([], [], [], [], [])
+        self.assertIn("flywheels", r)
+
+
+class TestV9Decay(unittest.TestCase):
+    def test_decay_detection(self):
+        r = decay_review([], [], [], [], [], [], [], [])
+        self.assertIn("decay_items", r)
+
+
+class TestV9RebalanceOptimized(unittest.TestCase):
+    def test_rebalance_optimized(self):
+        r = rebalance_optimized(25, 7, DEFAULT_CONFIG, [], [], [], [], [])
+        self.assertIn("allocation", r)
+        for g in STRATEGIC_GOALS:
+            self.assertIn(g, r["allocation"])
+
+
+class TestV9CSV(unittest.TestCase):
+    def test_csv_export(self):
+        ms = load_metrics()
+        m = Metric(metric_id=uid(), name="CSV Test", target_value=10, current_value=5)
+        ms.append(m); save_metrics(ms)
+        r = export_csv("metrics", "test_metrics.csv")
+        # Clean up
+        save_metrics([x for x in ms if x.metric_id != m.metric_id])
+        self.assertIn("exported", r)
+
+    def test_csv_import_nonexistent(self):
+        r = import_csv("metrics", "/nonexistent/file.csv")
+        self.assertIn("error", r)
+
+
+class TestV9AIPerformanceReview(unittest.TestCase):
+    def test_ai_performance_review_prompt_no_api_call(self):
+        prompt = ai_performance_review_prompt()
+        self.assertIn("AI PERFORMANCE REVIEW", prompt)
+        self.assertIn("Chief of Staff", prompt)
+        self.assertNotIn("http", prompt.lower())

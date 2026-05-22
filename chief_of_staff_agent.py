@@ -1113,6 +1113,251 @@ def one_page_cmd():
     print(SEP)
 
 # ======================================================================
+# V9 — PERFORMANCE MEASUREMENT
+# ======================================================================
+def metrics_list_cmd():
+    ms=load_metrics()
+    if not ms:print("  No metrics. Use --add-metric.");return
+    print(f"\n  METRICS ({len(ms)})");print(SEP)
+    for m in ms:print(f"  {m.metric_id}  {m.name[:40]}  target:{m.target_value}  current:{m.current_value}  {m.unit}")
+    print(SEP)
+
+def add_metric_cmd():
+    print("\n  ADD METRIC");print("-"*40)
+    print("  Categories:");[print(f"    {i+1}. {c}")for i,c in enumerate(METRIC_CATEGORIES)]
+    try:c=int(input("  Category (1-{0}): ".format(len(METRIC_CATEGORIES))));cat=METRIC_CATEGORIES[c-1]
+    except:cat="execution_quality"
+    print("  Strategic goals:");[print(f"    {i+1}. {g}")for i,g in enumerate(STRATEGIC_GOALS)]
+    try:sg_idx=int(input("  Goal (1-7): "));sg=STRATEGIC_GOALS[sg_idx-1]
+    except:sg="research_publication"
+    m=Metric(metric_id=uid(),name=input("  Name: ").strip(),strategic_goal=sg,category=cat,description=input("  Description: ").strip(),unit=input("  Unit (e.g., hours, count): ").strip(),target_value=float(input("  Target value: ").strip()or"1"),last_updated= today_str())
+    ms=load_metrics();ms.append(m);save_metrics(ms);print(f"  Metric '{m.name}' added.")
+
+def metrics_review_cmd():
+    r=metrics_review()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  METRICS REVIEW");print(SEP);print(f"  {r['summary']}")
+    for m in r["latest"]:print(f"    {m['name'][:45]}  {m['current']}/{m['target']} {m['unit']}")
+    print(SEP)
+
+def impact_list_cmd():
+    imps=load_impacts()
+    if not imps:print("  No impacts. Use --add-impact.");return
+    print(f"\n  IMPACT LEDGER ({len(imps)})");print(SEP)
+    for i in imps:print(f"  {i.impact_id}  [{i.impact_type}] {i.title[:50]}  magnitude:{i.magnitude}")
+    print(SEP)
+
+def add_impact_cmd():
+    print("\n  ADD IMPACT");print("-"*40)
+    print("  Impact types:");[print(f"    {i+1}. {t}")for i,t in enumerate(IMPACT_TYPES)]
+    try:it=int(input("  Type (1-{0}): ".format(len(IMPACT_TYPES))));impact_type=IMPACT_TYPES[it-1]
+    except:impact_type="paper_submitted"
+    imp=Impact(impact_id=uid(),date=today_str(),title=input("  Title: ").strip(),strategic_goal=input("  Strategic goal: ").strip(),impact_type=impact_type,description=input("  Description: ").strip(),magnitude=int(input("  Magnitude (1-10): ").strip()or"5"),confidence=int(input("  Confidence (1-10): ").strip()or"5"))
+    imps=load_impacts();imps.append(imp);save_impacts(imps);print(f"  Impact '{imp.title[:40]}' recorded.")
+
+def impact_review_cmd():
+    r=impact_review()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  IMPACT REVIEW");print(SEP);print(f"  {r['summary']}")
+    if r["top_3"]:[print(f"    [{i['type']}] {i['title'][:50]} (magnitude:{i['magnitude']})")for i in r["top_3"]]
+    print(SEP)
+
+def roi_review_cmd():
+    projs=load_projects();wfs=load_workflows();rels=load_relationships()
+    opps=load_opps();assets=load_assets();ms=load_metrics()
+    r=roi_review(projs,wfs,rels,opps,assets,ms)
+    print(f"\n  STRATEGIC ROI REVIEW");print(SEP)
+    print(f"  Analyzed: {r['total_analyzed']} items");print(f"  {r['summary']}")
+    if r["high_roi"]:
+        print(f"\n  HIGHEST ROI:");[print(f"    [{i['type']}] {i['name'][:45]}  ROI:{i['roi']}")for i in r["high_roi"]]
+    if r["low_roi"]:
+        print(f"\n  LOWEST ROI:");[print(f"    [{i['type']}] {i['name'][:45]}  ROI:{i['roi']}")for i in r["low_roi"]]
+    print(SEP)
+
+def workflow_performance_cmd():
+    r=workflow_performance()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  WORKFLOW PERFORMANCE");print(SEP);print(f"  {r['summary']}")
+    for w in r["workflows"]:print(f"    {w['workflow'][:45]}  runs:{w['runs']}  complete:{w['completion_rate']}%  quality:{w['avg_quality']}  est.error:{w['estimation_error_pct']}%")
+    print(SEP)
+
+def log_workflow_run_cmd():
+    wfs=load_workflows();print("\n  LOG WORKFLOW RUN");print("-"*40)
+    for i,w in enumerate(wfs):print(f"    {i+1}. {w.name}")
+    try:idx=int(input("  Workflow (1-{0}): ".format(len(wfs))))-1;wf=wfs[idx]
+    except:print("  Invalid selection.");return
+    est=int(input("  Estimated minutes: ").strip()or"60");act=int(input("  Actual minutes: ").strip()or"60")
+    comp=input("  Completed? (y/n): ").strip().lower()=="y";out=input("  Output created: ").strip()
+    qual=int(input("  Quality (1-10): ").strip()or"5")
+    wr=log_workflow_run(wf.workflow_id,est,act,comp,out,qual);print(f"  Run logged. ({wr.run_id})")
+
+def estimate_review_cmd():
+    r=estimate_review()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  ESTIMATION ACCURACY");print(SEP)
+    print(f"  Time error: {r['avg_time_error_pct']}%");print(f"  Prob error: {r['avg_prob_error']}")
+    if r["correction"]:print(f"\n  CORRECTION: {r['correction']}")
+    print(SEP)
+
+def reforecast_cmd():
+    okrs=load_okrs();ms=load_metrics();preds=load_predictions();ests=load_estimates();queue=load_queue()
+    r=reforecast(okrs,ms,preds,ests,queue)
+    print(f"\n  REFORECAST REVIEW");print(SEP);print(f"  {r['summary']}")
+    for f in r["forecasts"]:print(f"    [{f['entity']}] {f['name'][:50]}: {f['original_confidence']} → {f['adjusted_confidence']} | {f['reason']}")
+    print(SEP)
+
+def velocity_review_cmd():
+    records=load_recent_history(90);queue=load_queue();impact=load_impacts()
+    wrs=load_workflow_runs();ests=load_estimates()
+    r=velocity_review(records,queue,impact,wrs,ests)
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  PROGRESS VELOCITY");print(SEP)
+    for k,v in r.items():
+        if k in ("message","summary"):continue
+        print(f"  {k.replace('_',' ').upper()}: {v}")
+    print(SEP)
+
+def indicators_cmd():
+    inds=load_indicators()
+    print(f"\n  INDICATORS ({len(inds)})");print(SEP)
+    for i in inds:
+        tag="⚠" if i.current_value <= i.warning_threshold else "✓"
+        print(f"  {tag} [{i.indicator_type}] {i.name[:40]}  {i.current_value}/{i.target_value}  ({i.strategic_goal})")
+    print(SEP)
+
+def indicator_review_cmd():
+    r=indicator_review()
+    print(f"\n  INDICATOR REVIEW");print(SEP);print(f"  {r['summary']}")
+    if r["warnings"]:[print(f"    [{w['goal']}] {w['name'][:40]}: {w['current']} (warning at {w['warning']})")for w in r["warnings"]]
+    print(SEP)
+
+def review_board_cmd():
+    data={"projects":load_projects(),"workflows":load_workflows(),"relationships":load_relationships(),
+          "opportunities":load_opps(),"assets":load_assets(),"metrics":load_metrics(),
+          "records":load_recent_history(90),"queue":load_queue(),"impact":load_impacts(),
+          "workflow_runs":load_workflow_runs(),"estimates":load_estimates(),
+          "okrs":load_okrs(),"predictions":load_predictions(),"risks":load_risks()}
+    r=review_board(data)
+    print(f"\n  STRATEGIC REVIEW BOARD — {today_str()}");print(SEP)
+    print(f"  THESIS: {r['strategic_thesis']}")
+    print(f"  METRICS: {r['metrics'].get('summary','')}")
+    print(f"  IMPACT: {r['impact'].get('summary','')}")
+    print(f"  ROI: {r['roi'].get('summary','')}")
+    print(f"  VELOCITY: {r['velocity'].get('summary','')}")
+    print(f"  INDICATORS: {r['indicators'].get('summary','')}")
+    print(f"  REFORECAST: {r['reforecast'].get('summary','')}")
+    print(f"\n  TOP RISKS: {', '.join(r['top_risks'][:3]) if r['top_risks'] else 'none'}")
+    print(f"  RECOMMENDED DECISIONS:");[print(f"    - {d}")for d in r['recommended_decisions'] if d]
+    print(SEP)
+
+def contracts_cmd():
+    cs=load_contracts()
+    if not cs:print("  No contracts. Use --add-contract.");return
+    print(f"\n  ACCOUNTABILITY CONTRACTS ({len(cs)})");print(SEP)
+    for c in cs:print(f"  {c.contract_id}  {c.title[:45]}  goal:{c.strategic_goal}  status:{c.status}")
+    print(SEP)
+
+def add_contract_cmd():
+    print("\n  ADD CONTRACT");print("-"*40)
+    c=Contract(contract_id=uid(),title=input("  Title: ").strip(),strategic_goal=input("  Strategic goal: ").strip(),commitment=input("  Commitment: ").strip(),start_date=today_str(),end_date=input("  End date (YYYY-MM-DD): ").strip(),success_metric=input("  Success metric: ").strip(),minimum_standard=input("  Minimum standard: ").strip(),stretch_standard=input("  Stretch standard (optional): ").strip(),consequence_if_missed=input("  Consequence if missed: ").strip(),reward_if_completed=input("  Reward if completed: ").strip(),review_date=input("  Review date (YYYY-MM-DD): ").strip())
+    cs=load_contracts();cs.append(c);save_contracts(cs);print(f"  Contract '{c.title[:40]}' created.")
+
+def contract_review_cmd():
+    r=contract_review()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  CONTRACT REVIEW");print(SEP);print(f"  {r['summary']}")
+    for c in r["latest"]:print(f"    {c['title'][:50]} [{c['status']}]")
+    print(SEP)
+
+def adherence_review_cmd():
+    rhythms=load_rhythms();contracts=load_contracts();doctrine=load_doctrine()
+    okrs=load_okrs();records=load_recent_history(14)
+    r=adherence_review(rhythms,contracts,doctrine,okrs,records)
+    print(f"\n  BEHAVIORAL ADHERENCE REVIEW");print(SEP)
+    print(f"  Score: {r['adherence_score']}/100")
+    print(f"  Strong: {', '.join(r['strengths']) if r['strengths'] else 'none'}")
+    print(f"  Weak: {', '.join(r['weaknesses']) if r['weaknesses'] else 'none'}")
+    print(f"  Details:");[print(f"    {k}: {v}/target")for k,v in r['details'].items()]
+    print(SEP)
+
+def rubrics_cmd():
+    rbs=load_rubrics()
+    print(f"\n  QUALITY RUBRICS ({len(rbs)})");print(SEP)
+    for r in rbs:print(f"  {r.rubric_id}  {r.name}  ({r.output_type})")
+    print(SEP)
+
+def score_output_cmd():
+    rbs=load_rubrics();print("\n  SCORE OUTPUT");print(SEP)
+    for i,r in enumerate(rbs):print(f"    {i+1}. {r.name}")
+    try:idx=int(input("  Rubric (1-{0}): ".format(len(rbs))))-1;rb=rbs[idx]
+    except:print("  Invalid.");return
+    title=input("  Output title: ").strip();scores=[]
+    for crit in rb.criteria:
+        try:s=float(input(f"  {crit} (1-10): ").strip());scores.append(s)
+        except:scores.append(5)
+    os=score_output(title,rb.output_type,rb.rubric_id,scores)
+    oss=load_output_scores();oss.append(os);save_output_scores(oss)
+    print(f"  Scored: {os.overall_score}/10")
+
+def attribution_review_cmd():
+    imps=load_impacts();projs=load_projects();wfs=load_workflows()
+    rels=load_relationships();assets=load_assets()
+    r=attribution_review(imps,projs,wfs,rels,assets)
+    print(f"\n  OUTCOME ATTRIBUTION REVIEW");print(SEP)
+    if r.get("message"):print(f"  {r['message']}");return
+    for i in r["results"]:
+        print(f"  [{i['type']}] {i['title'][:50]} (magnitude:{i['magnitude']})")
+        print(f"    Attributions: {', '.join(i['attributions'])}")
+        print(f"    Recommendation: {i['recommendation']}")
+    print(SEP)
+
+def flywheel_review_cmd():
+    imps=load_impacts();projs=load_projects();rels=load_relationships()
+    assets=load_assets();evidence=load_evidence()
+    r=flywheel_review(imps,projs,rels,assets,evidence)
+    print(f"\n  STRATEGIC FLYWHEEL REVIEW");print(SEP);print(f"  {r['summary']}")
+    for f in r["flywheels"]:print(f"\n  FLYWHEEL: {f['flywheel']}\n    Evidence: {f['evidence']}\n    Next: {f['recommendation']}")
+    print(SEP)
+
+def decay_review_cmd():
+    rels=load_relationships();projs=load_projects();assets=load_assets()
+    assumps=load_assumptions();preds=load_predictions();risks=load_risks()
+    wfs=load_workflows();okrs=load_okrs()
+    r=decay_review(rels,projs,assets,assumps,preds,risks,wfs,okrs)
+    print(f"\n  STRATEGIC DECAY DETECTOR");print(SEP);print(f"  {r['summary']}")
+    for d in r["decay_items"][:10]:print(f"    [{d['type']}] {d['name'][:50]}: {d['issue']}")
+    print(SEP)
+
+def rebalance_optimized_cmd():
+    try:ah=float(input("  Available hours per week: ").strip()or"25")
+    except:ah=25
+    try:energy=int(input("  Energy level (1-10): ").strip()or"7")
+    except:energy=7
+    cfg=load_config();okrs=load_okrs();rels=load_relationships()
+    contracts=load_contracts();queue=load_queue();risks=load_risks()
+    r=rebalance_optimized(ah,energy,cfg,okrs,rels,contracts,queue,risks)
+    print(f"\n  OPTIMIZED REBALANCE");print(SEP)
+    print(f"  Total hours: {r['total_hours']} | Energy: {r['energy_level']}/10")
+    print(f"\n  RECOMMENDED ALLOCATION:")
+    for g,h in r["allocation"].items():print(f"    {g}: {h:.1f} hours")
+    print(f"\n  CONSTRAINTS: {r['constraints']}")
+    if r["recommendations"]:print(f"\n  RECOMMENDATIONS:");[print(f"    - {rec}")for rec in r["recommendations"]]
+    print(SEP)
+
+def export_csv_cmd(store_name):
+    r=export_csv(store_name, None)
+    if r.get("error"):print(f"  Error: {r['error']}");return
+    print(f"  Exported: {r['exported']} ({r['records']} records)")
+
+def import_csv_cmd(store_name, path):
+    r=import_csv(store_name, path)
+    if r.get("error"):print(f"  Error: {r['error']}");return
+    print(f"  Imported: {r['imported']} records into {r['store']} (total: {r['total_records']})")
+
+def ai_performance_review_cmd():
+    print(ai_performance_review_prompt())
+
+# ======================================================================
 # V6 — REVIEWS
 # ======================================================================
 def calibration_review_cmd():
@@ -1876,6 +2121,37 @@ def main():
     g.add_argument("--export-context",type=str,metavar="QUERY",help="Export context with optional redaction")
     g.add_argument("--dashboard-role",type=str,metavar="ROLE",help="Role-specific dashboard (researcher/pi/lecturer/collaborator/founder/public-intellectual)")
     g.add_argument("--one-page",action="store_true",help="One-page strategic overview")
+    # V9 args
+    g.add_argument("--metrics",action="store_true",help="List metrics")
+    g.add_argument("--add-metric",action="store_true",help="Add metric")
+    g.add_argument("--update-metric",type=str,metavar="METRIC_ID",help="Update metric value")
+    g.add_argument("--metrics-review",action="store_true",help="Review metrics")
+    g.add_argument("--impact",action="store_true",help="List impact records")
+    g.add_argument("--add-impact",action="store_true",help="Add impact record")
+    g.add_argument("--impact-review",action="store_true",help="Review impact ledger")
+    g.add_argument("--roi-review",action="store_true",help="Strategic ROI analysis")
+    g.add_argument("--workflow-performance",action="store_true",help="Workflow performance analytics")
+    g.add_argument("--review-workflow-run",type=str,metavar="RUN_ID",help="Review a workflow run")
+    g.add_argument("--estimates",action="store_true",help="View estimation accuracy")
+    g.add_argument("--estimate-review",action="store_true",help="Estimation review")
+    g.add_argument("--reforecast",action="store_true",help="Reforecast outcomes and OKRs")
+    g.add_argument("--velocity-review",action="store_true",help="Progress velocity review")
+    g.add_argument("--indicators",action="store_true",help="List leading/lagging indicators")
+    g.add_argument("--indicator-review",action="store_true",help="Indicator health review")
+    g.add_argument("--review-board",action="store_true",help="Strategic review board")
+    g.add_argument("--contracts",action="store_true",help="List accountability contracts")
+    g.add_argument("--add-contract",action="store_true",help="Create accountability contract")
+    g.add_argument("--contract-review",action="store_true",help="Contract review")
+    g.add_argument("--adherence-review",action="store_true",help="Behavioral adherence review")
+    g.add_argument("--rubrics",action="store_true",help="List quality rubrics")
+    g.add_argument("--score-output",action="store_true",help="Score an output using a rubric")
+    g.add_argument("--attribution-review",action="store_true",help="Outcome attribution review")
+    g.add_argument("--flywheel-review",action="store_true",help="Strategic flywheel review")
+    g.add_argument("--decay-review",action="store_true",help="Strategic decay detector")
+    g.add_argument("--rebalance-optimized",action="store_true",help="Optimized rebalance with constraints")
+    g.add_argument("--export-csv",type=str,metavar="STORE",help="Export store as CSV (metrics/projects/opportunities/impact/risks)")
+    g.add_argument("--import-csv",type=str,metavar="STORE",help="Import CSV into store (requires --export for file path)")
+    g.add_argument("--ai-performance-review",action="store_true",help="AI performance review prompt")
     g.add_argument("--reflect",type=str,metavar="YYYY-MM-DD",help="End-of-day reflection")
     g.add_argument("--project",type=str,metavar="PROJECT_ID",help="Project detail")
     p.add_argument("--json",action="store_true",help="Clean JSON output")
@@ -1991,6 +2267,35 @@ def main():
     if args.export_context: export_context_cmd(args.export_context, args.redact); return
     if args.dashboard_role: role_dashboard_cmd(args.dashboard_role); return
     if args.one_page: one_page_cmd(); return
+    # V9 dispatch
+    if args.metrics or args.metrics_review: metrics_review_cmd() if args.metrics_review else metrics_list_cmd(); return
+    if args.add_metric: add_metric_cmd(); return
+    if args.update_metric: print(f"  Use --add-metric with new value. Metric ID: {args.update_metric}"); return
+    if args.impact: impact_list_cmd(); return
+    if args.add_impact: add_impact_cmd(); return
+    if args.impact_review: impact_review_cmd(); return
+    if args.roi_review: roi_review_cmd(); return
+    if args.workflow_performance: workflow_performance_cmd(); return
+    if args.review_workflow_run: print(f"  Run ID: {args.review_workflow_run}"); return
+    if args.estimates or args.estimate_review: estimate_review_cmd(); return
+    if args.reforecast: reforecast_cmd(); return
+    if args.velocity_review: velocity_review_cmd(); return
+    if args.indicators: indicators_cmd(); return
+    if args.indicator_review: indicator_review_cmd(); return
+    if args.review_board: review_board_cmd(); return
+    if args.contracts: contracts_cmd(); return
+    if args.add_contract: add_contract_cmd(); return
+    if args.contract_review: contract_review_cmd(); return
+    if args.adherence_review: adherence_review_cmd(); return
+    if args.rubrics: rubrics_cmd(); return
+    if args.score_output: score_output_cmd(); return
+    if args.attribution_review: attribution_review_cmd(); return
+    if args.flywheel_review: flywheel_review_cmd(); return
+    if args.decay_review: decay_review_cmd(); return
+    if args.rebalance_optimized: rebalance_optimized_cmd(); return
+    if args.export_csv: export_csv_cmd(args.export_csv); return
+    if args.import_csv: import_csv_cmd(args.import_csv, args.export or ""); return
+    if args.ai_performance_review: ai_performance_review_cmd(); return
     if args.dashboard: dashboard(); return
     if args.monthly_review: monthly_review(days=args.days); return
     if args.weekly_review: weekly_review(days=args.days); return

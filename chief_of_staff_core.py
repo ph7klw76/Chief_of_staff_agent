@@ -77,6 +77,16 @@ EXECUTION_QUEUE_PATH = Path("chief_of_staff_execution_queue.json")
 GRAPH_PATH = Path("chief_of_staff_graph.json")
 CAPTURES_PATH = Path("chief_of_staff_captures.json")
 
+# V9 store paths
+METRICS_PATH = Path("chief_of_staff_metrics.json")
+IMPACT_PATH = Path("chief_of_staff_impact.json")
+WORKFLOW_RUNS_PATH = Path("chief_of_staff_workflow_runs.json")
+ESTIMATES_PATH = Path("chief_of_staff_estimates.json")
+INDICATORS_PATH = Path("chief_of_staff_indicators.json")
+CONTRACTS_PATH = Path("chief_of_staff_contracts.json")
+RUBRICS_PATH = Path("chief_of_staff_rubrics.json")
+OUTPUT_SCORES_PATH = Path("chief_of_staff_output_scores.json")
+
 # V8 constants
 WORKFLOW_CATEGORIES = ["research_workflow","grant_workflow","industry_collaboration_workflow","teaching_workflow","public_influence_workflow","venture_workflow","admin_workflow","reflection_workflow"]
 MEETING_TYPES = ["research_collaboration","industry_partner","grant_partner","student_supervision","teaching_meeting","venture_discussion","administrative_meeting"]
@@ -85,6 +95,40 @@ DRAFT_PROMPT_TYPES = ["grant","industry-email","linkedin","lecture","paper-revie
 GRAPH_NODE_TYPES = ["task","project","opportunity","relationship","risk","decision","experiment","evidence","assumption","prediction","outcome","asset","workflow","okr","doctrine","capital"]
 GRAPH_EDGE_TYPES = ["supports","depends_on","blocks","contradicts","informs","belongs_to","produces","risks","strengthens","weakens"]
 ROLE_DASHBOARDS = ["researcher","pi","lecturer","collaborator","founder","public-intellectual"]
+
+# V9 constants
+METRIC_CATEGORIES = ["research_output","grant_progress","industry_collaboration","teaching_quality","public_influence","venture_progress","relationship_capital","execution_quality","energy_sustainability","financial_progress","strategic_capital"]
+IMPACT_TYPES = ["paper_submitted","paper_accepted","grant_submitted","grant_awarded","collaboration_started","industry_meeting_secured","student_outcome_improved","lecture_asset_reused","linkedin_post_engaged","venture_hypothesis_validated","asset_reused","relationship_strengthened","risk_reduced","decision_improved"]
+INDICATOR_TYPES = ["leading","lagging"]
+ESTIMATE_TYPES = ["time","probability","effort","impact"]
+ADHERENCE_CHECK_ITEMS = ["operating_rhythms","contracts","doctrine","okrs","sprint_plan","startup_shutdown","followup_discipline"]
+
+DEFAULT_INDICATORS = [
+    {"indicator_id":"i_research_leading_1","strategic_goal":"research_publication","indicator_type":"leading","name":"Manuscript deep-work hours","description":"Weekly hours spent on manuscript writing","current_value":0,"target_value":6,"warning_threshold":3},
+    {"indicator_id":"i_research_leading_2","strategic_goal":"research_publication","indicator_type":"leading","name":"Papers reviewed strategically","description":"Papers reviewed using review workflow","current_value":0,"target_value":4,"warning_threshold":1},
+    {"indicator_id":"i_research_lagging_1","strategic_goal":"research_publication","indicator_type":"lagging","name":"Papers submitted","description":"Papers submitted to journals","current_value":0,"target_value":4,"warning_threshold":1},
+    {"indicator_id":"i_grant_leading_1","strategic_goal":"grant_funding","indicator_type":"leading","name":"Concept notes drafted","description":"One-page concept notes completed","current_value":0,"target_value":4,"warning_threshold":1},
+    {"indicator_id":"i_grant_leading_2","strategic_goal":"grant_funding","indicator_type":"leading","name":"Collaborators contacted","description":"Grant collaborators engaged","current_value":0,"target_value":6,"warning_threshold":2},
+    {"indicator_id":"i_grant_lagging_1","strategic_goal":"grant_funding","indicator_type":"lagging","name":"Grants submitted","description":"Proposals submitted","current_value":0,"target_value":3,"warning_threshold":1},
+    {"indicator_id":"i_industry_leading_1","strategic_goal":"industry_collaboration","indicator_type":"leading","name":"Outreach messages drafted","description":"Industry outreach messages prepared","current_value":0,"target_value":6,"warning_threshold":2},
+    {"indicator_id":"i_industry_lagging_1","strategic_goal":"industry_collaboration","indicator_type":"lagging","name":"Collaborations formalized","description":"Signed or agreed collaborations","current_value":0,"target_value":2,"warning_threshold":0},
+    {"indicator_id":"i_influence_leading_1","strategic_goal":"public_influence","indicator_type":"leading","name":"Research posts drafted","description":"LinkedIn/public posts prepared","current_value":0,"target_value":12,"warning_threshold":4},
+    {"indicator_id":"i_influence_lagging_1","strategic_goal":"public_influence","indicator_type":"lagging","name":"Meaningful conversations generated","description":"Substantive responses or invitations","current_value":0,"target_value":6,"warning_threshold":2},
+    {"indicator_id":"i_venture_leading_1","strategic_goal":"deeptech_venture","indicator_type":"leading","name":"Hypotheses tested","description":"Venture hypotheses validated or falsified","current_value":0,"target_value":3,"warning_threshold":1},
+    {"indicator_id":"i_venture_lagging_1","strategic_goal":"deeptech_venture","indicator_type":"lagging","name":"Validated venture thesis","description":"Clear validated venture direction","current_value":0,"target_value":1,"warning_threshold":0},
+]
+
+DEFAULT_RUBRICS = {
+    "grant_concept_note": {"name":"Grant Concept Note Rubric","output_type":"grant_concept_note","strategic_goal":"grant_funding","criteria":["Research question clarity","Novelty statement strength","Outcome measurability","Collaborator identification","Call requirement alignment"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Clear question, compelling novelty, measurable outcomes, named collaborators, follows call exactly.","definition_of_poor":"Vague question, no novelty, fuzzy outcomes, no collaborators, ignores call."},
+    "industry_email": {"name":"Industry Email Rubric","output_type":"industry_email","strategic_goal":"industry_collaboration","criteria":["Subject line specificity","First sentence relevance","Value proposition clarity","Call to action strength","Professional tone"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Specific subject, references their work, clear mutual value, explicit next step, warm professional tone.","definition_of_poor":"Generic subject, no reference to recipient, unclear value, no ask, too long."},
+    "research_paper_review": {"name":"Paper Review Rubric","output_type":"research_paper_review","strategic_goal":"research_publication","criteria":["Core claim identification","Connection to own research","Weakness identification","Follow-up idea","Citation capture"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Clear claim, strong connection to own work, identified weakness, actionable follow-up, citation saved.","definition_of_poor":"No clear claim, no connection to own work, no weakness noted, no follow-up."},
+    "manuscript_section": {"name":"Manuscript Section Rubric","output_type":"manuscript_section","strategic_goal":"research_publication","criteria":["Outline adherence","Reference quality","Figure integration","Logical flow","Draft quality"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Follows outline exactly, key references cited, figures well-placed, clear flow, readable draft.","definition_of_poor":"Off-outline, missing references, no figures, disjointed, poor writing."},
+    "lecture_plan": {"name":"Lecture Plan Rubric","output_type":"lecture_plan","strategic_goal":"teaching_excellence","criteria":["Learning objective clarity","Example relevance","Socratic question quality","Misconception anticipation","Quiz question quality"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Clear objectives, relevant examples, thought-provoking questions, correct misconceptions, diagnostic quiz.","definition_of_poor":"Fuzzy objectives, irrelevant examples, no questions, no misconception check."},
+    "linkedin_research_post": {"name":"LinkedIn Post Rubric","output_type":"linkedin_research_post","strategic_goal":"public_influence","criteria":["Hook engagement","Plain language quality","Personal reflection","Call to action","Accuracy"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Engaging hook, clear plain language, personal story, strong call to action, accurate.","definition_of_poor":"Boring hook, jargon-heavy, no personal angle, no call to action."},
+    "venture_hypothesis": {"name":"Venture Hypothesis Rubric","output_type":"venture_hypothesis","strategic_goal":"deeptech_venture","criteria":["Technical insight clarity","Customer pain identification","Market hypothesis quality","MVE design","Assumption identification"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Clear insight, specific pain, plausible market, testable MVE, key assumptions explicit.","definition_of_poor":"Vague insight, no pain identified, no market analysis, untestable, no assumptions."},
+    "meeting_brief": {"name":"Meeting Brief Rubric","output_type":"meeting_brief","strategic_goal":"all","criteria":["Purpose clarity","Desired outcome specificity","Value proposition quality","Question preparation","Objection anticipation"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Clear purpose, specific outcome, strong value prop, prepared questions, anticipated objections.","definition_of_poor":"Fuzzy purpose, no outcome, generic value prop, no questions."},
+    "strategy_memo": {"name":"Strategy Memo Rubric","output_type":"strategy_memo","strategic_goal":"all","criteria":["Thesis clarity","Data support","Recommendation specificity","Risk acknowledgment","Actionability"],"scoring_scale":"1-10 per criterion","definition_of_excellent":"Clear thesis, data-backed, specific recommendations, risks noted, immediately actionable.","definition_of_poor":"No clear thesis, no data, vague recommendations, no risk awareness."},
+}
 
 DEFAULT_WORKFLOWS = [
     {"workflow_id":"wf_grant_concept","name":"Write one-page grant concept note","category":"grant_workflow","strategic_goal":"grant_funding","description":"Write a focused one-page grant concept note.","trigger":"Grant deadline approaching or new funding call","required_inputs":["funding call details","research idea","preliminary data summary"],"steps":["1. Read the funding call carefully (15 min)","2. Define the core research question (10 min)","3. Draft the novelty statement (15 min)","4. Outline expected outcomes (10 min)","5. Identify key collaborators (5 min)","6. Write the one-page draft (30 min)","7. Review and refine (15 min)"],"expected_output":"One-page concept note ready for internal review","estimated_total_minutes":100,"status":"active"},
@@ -352,6 +396,62 @@ class SprintPlan:
     assets_to_build:list=field(default_factory=list)
     kill_defer:list=field(default_factory=list)
     daily_suggestions:list=field(default_factory=list)
+
+# V9 dataclasses
+@dataclass
+class Metric:
+    metric_id:str="";name:str="";strategic_goal:str="";category:str="execution_quality"
+    description:str="";unit:str="";target_value:float=0.0;current_value:float=0.0
+    baseline_value:float=0.0;measurement_frequency:str="weekly";source:str=""
+    linked_outcome_id:str="";linked_project_id:str="";linked_okr_id:str=""
+    last_updated:str="";notes:str=""
+
+@dataclass
+class Impact:
+    impact_id:str="";date:str="";title:str="";strategic_goal:str=""
+    impact_type:str="";description:str="";evidence:str=""
+    magnitude:int=5;confidence:int=5
+    linked_task_id:str="";linked_project_id:str="";linked_opportunity_id:str=""
+    linked_relationship_id:str="";linked_asset_id:str="";notes:str=""
+
+@dataclass
+class WorkflowRun:
+    run_id:str="";workflow_id:str="";date:str=""
+    estimated_minutes:int=60;actual_minutes:int=0;completed:bool=False
+    output_created:str="";quality_score:int=5
+    friction_points:list=field(default_factory=list);improvement_note:str=""
+
+@dataclass
+class Estimate:
+    estimate_id:str="";date:str="";entity_type:str="";entity_id:str=""
+    estimate_type:str="time";estimated_value:float=0.0;actual_value:float=0.0
+    error_value:float=0.0;error_percent:float=0.0;lesson:str=""
+
+@dataclass
+class Indicator:
+    indicator_id:str="";strategic_goal:str="";indicator_type:str="leading"
+    name:str="";description:str="";current_value:float=0.0
+    target_value:float=0.0;warning_threshold:float=0.0;linked_metric_id:str=""
+
+@dataclass
+class Contract:
+    contract_id:str="";title:str="";strategic_goal:str=""
+    commitment:str="";start_date:str="";end_date:str=""
+    success_metric:str="";minimum_standard:str="";stretch_standard:str=""
+    consequence_if_missed:str="";reward_if_completed:str=""
+    status:str="active";review_date:str=""
+
+@dataclass
+class Rubric:
+    rubric_id:str="";name:str="";output_type:str="";strategic_goal:str=""
+    criteria:list=field(default_factory=list);scoring_scale:str="1-10"
+    definition_of_excellent:str="";definition_of_poor:str=""
+
+@dataclass
+class OutputScore:
+    score_id:str="";date:str="";output_title:str="";output_type:str=""
+    rubric_id:str="";scores_by_criterion:dict=field(default_factory=dict)
+    overall_score:float=0.0;improvement_note:str=""
 
 # ======================================================================
 # SCORING
@@ -2107,3 +2207,460 @@ def _ext_gather_all_data(data):
     data["decisions"] = load_records(DECISIONS_PATH) if DECISIONS_PATH.exists() else []
     data["experiments"] = load_records(EXPERIMENTS_PATH) if EXPERIMENTS_PATH.exists() else []
     return data
+
+# ======================================================================
+# V9 — STRATEGIC PERFORMANCE MEASUREMENT
+# ======================================================================
+import statistics
+
+# --- Metrics Registry ---
+def load_metrics():
+    data = load_records(METRICS_PATH)
+    return [Metric(**m) for m in data] if data else []
+
+def save_metrics(ms): save_records(METRICS_PATH, [m.__dict__ for m in ms])
+
+def metrics_review():
+    ms = load_metrics()
+    if not ms: return {"total": 0, "message": "No metrics registered. Use --add-metric."}
+    on_target = [m for m in ms if m.current_value >= m.target_value]
+    below_target = [m for m in ms if m.current_value < (m.target_value * 0.5)]
+    return {"total": len(ms), "on_target": len(on_target), "below_target": len(below_target),
+            "latest": [{"name": m.name, "current": m.current_value, "target": m.target_value,
+                        "unit": m.unit, "goal": m.strategic_goal} for m in ms[:10]],
+            "summary": f"{len(on_target)} on target, {len(below_target)} below 50% of target."}
+
+# --- Impact Ledger ---
+def load_impacts():
+    data = load_records(IMPACT_PATH)
+    return [Impact(**i) for i in data] if data else []
+
+def save_impacts(imps): save_records(IMPACT_PATH, [i.__dict__ for i in imps])
+
+def impact_review():
+    imps = load_impacts()
+    if not imps: return {"total": 0, "message": "No impact recorded. Use --add-impact."}
+    by_type = defaultdict(int)
+    total_magnitude = 0
+    for imp in imps:
+        by_type[imp.impact_type] += 1
+        total_magnitude += imp.magnitude
+    return {"total": len(imps), "by_type": dict(by_type),
+            "avg_magnitude": round(total_magnitude / len(imps), 1),
+            "top_3": [{"title": i.title, "type": i.impact_type, "magnitude": i.magnitude}
+                      for i in sorted(imps, key=lambda x: -x.magnitude)[:3]],
+            "summary": f"{len(imps)} impacts, avg magnitude {total_magnitude / len(imps):.1f}/10."}
+
+# --- Strategic ROI Engine ---
+def roi_review(projects, workflows, relationships, opportunities, assets, metrics):
+    """Strategic ROI: return - cost for each strategic investment."""
+    def calc_roi(item, item_type):
+        impact = getattr(item, "magnitude", getattr(item, "priority_score", 5))
+        compound = getattr(item, "estimated_future_value", getattr(item, "current_score", 5))
+        rel_value = getattr(item, "relationship_value", getattr(item, "relationship_strength", 5))
+        evidence = getattr(item, "confidence", getattr(item, "evidence_strength", 5))
+        future_opt = getattr(item, "potential_value", getattr(item, "opportunity_capture", 5))
+        ret = (impact * 0.30 + compound * 0.25 + rel_value * 0.15 + evidence * 0.15 + future_opt * 0.15)
+        time_c = getattr(item, "estimated_minutes", getattr(item, "estimated_total_minutes", 60)) / 60
+        energy_c = getattr(item, "energy_required", getattr(item, "focus_required", 5))
+        opp_c = getattr(item, "opportunity_cost", 3)
+        complexity = getattr(item, "risk", getattr(item, "risk_exposure", 5))
+        cost = (time_c * 0.35 + energy_c * 0.25 + opp_c * 0.25 + complexity * 0.15)
+        return round(ret - cost, 2), ret, cost
+    items = []
+    for p in projects[:10]: r, s, c = calc_roi(p, "project"); items.append({"name": getattr(p, "name", str(p)), "type": "project", "roi": r, "return": round(s, 2), "cost": round(c, 2)})
+    for w in workflows[:10]: r, s, c = calc_roi(w, "workflow"); items.append({"name": w.name, "type": "workflow", "roi": r, "return": round(s, 2), "cost": round(c, 2)})
+    for o in opportunities[:10]: r, s, c = calc_roi(o, "opportunity"); items.append({"name": getattr(o, "name", str(o)), "type": "opportunity", "roi": r, "return": round(s, 2), "cost": round(c, 2)})
+    items.sort(key=lambda x: -x["roi"])
+    high = items[:5]; low = items[-5:] if len(items) >= 5 else []
+    return {"high_roi": high, "low_roi": low, "total_analyzed": len(items),
+            "summary": f"Highest ROI: {high[0]['name'] if high else 'N/A'}. Lowest: {low[0]['name'] if low else 'N/A'}."}
+
+# --- Workflow Performance ---
+def load_workflow_runs():
+    data = load_records(WORKFLOW_RUNS_PATH)
+    return [WorkflowRun(**w) for w in data] if data else []
+
+def save_workflow_runs(wrs): save_records(WORKFLOW_RUNS_PATH, [w.__dict__ for w in wrs])
+
+def log_workflow_run(wf_id, estimated, actual, completed, output, quality):
+    wrs = load_workflow_runs()
+    wr = WorkflowRun(run_id=uid(), workflow_id=wf_id, date=today_str(),
+                     estimated_minutes=estimated, actual_minutes=actual,
+                     completed=completed, output_created=output, quality_score=quality)
+    wrs.append(wr); save_workflow_runs(wrs); return wr
+
+def workflow_performance():
+    wrs = load_workflow_runs()
+    wfs = {w.workflow_id: w for w in load_workflows()}
+    if not wrs: return {"total_runs": 0, "message": "No workflow runs logged."}
+    by_wf = defaultdict(list)
+    for wr in wrs: by_wf[wr.workflow_id].append(wr)
+    results = []
+    for wf_id, runs in by_wf.items():
+        completed = [r for r in runs if r.completed]
+        rates = []
+        for r in runs:
+            if r.actual_minutes > 0: rates.append(r.estimated_minutes / max(r.actual_minutes, 1))
+        avg_est_error = round((1 - (sum(rates) / len(rates))) * 100, 1) if rates else 0
+        results.append({"workflow": wfs.get(wf_id, Workflow(name=wf_id)).name,
+                        "runs": len(runs), "completion_rate": round(len(completed) / len(runs) * 100, 0),
+                        "avg_quality": round(sum(r.quality_score for r in runs) / len(runs), 1),
+                        "estimation_error_pct": avg_est_error})
+    return {"total_runs": len(wrs), "workflows": results,
+            "summary": f"{len(wrs)} runs across {len(by_wf)} workflows."}
+
+# --- Estimation Accuracy ---
+def load_estimates():
+    data = load_records(ESTIMATES_PATH)
+    return [Estimate(**e) for e in data] if data else []
+
+def save_estimates(es): save_records(ESTIMATES_PATH, [e.__dict__ for e in es])
+
+def estimate_review():
+    es = load_estimates()
+    if not es: return {"total": 0, "message": "No estimates recorded."}
+    time_ests = [e for e in es if e.estimate_type == "time"]
+    prob_ests = [e for e in es if e.estimate_type == "probability"]
+    time_errors = [e.error_percent for e in time_ests if e.error_percent != 0]
+    prob_errors = [(e.estimated_value - e.actual_value) / max(abs(e.actual_value), 0.01) for e in prob_ests]
+    by_entity = defaultdict(list)
+    for e in es: by_entity[e.entity_type].append(e.error_percent)
+    entity_errors = {k: round(statistics.mean(v), 1) for k, v in by_entity.items() if v}
+    correction = None
+    if time_errors:
+        avg = statistics.mean(time_errors)
+        if avg > 10: correction = f"Time underestimation: {avg:.0f}%. Multiply future time estimates by {1 + avg / 100:.2f}."
+        elif avg < -10: correction = f"Time overestimation: {avg:.0f}%."
+    return {"total": len(es), "avg_time_error_pct": round(statistics.mean(time_errors), 1) if time_errors else 0,
+            "avg_prob_error": round(statistics.mean(prob_errors), 2) if prob_errors else 0,
+            "by_entity_type": entity_errors, "correction": correction,
+            "summary": correction or "Insufficient data for estimation patterns."}
+
+# --- Reforecasting ---
+def reforecast(okrs, metrics, predictions, estimates, queue):
+    items = []
+    for o in okrs:
+        if o.status != "active": continue
+        krs = o.key_results if isinstance(o.key_results, list) else []
+        avg_progress = sum(kr.progress_percent if isinstance(kr, KeyResult) else kr.get("progress_percent", 0)
+                          for kr in krs) / max(len(krs), 1)
+        original_conf = o.confidence
+        blocked = sum(1 for kr in krs if (isinstance(kr, dict) and kr.get("status") == "blocked")
+                     or (isinstance(kr, KeyResult) and kr.status == "blocked"))
+        adjusted_conf = max(1, original_conf - blocked * 2 - (10 - int(avg_progress / 10)) * 2)
+        if adjusted_conf < original_conf:
+            items.append({"entity": "okr", "name": o.title,
+                         "original_confidence": original_conf, "adjusted_confidence": adjusted_conf,
+                         "reason": f"Blocked KRs: {blocked}, avg progress: {avg_progress:.0f}%",
+                         "recommendation": "Protect deep-work blocks or adjust target date."})
+    for p in predictions:
+        if getattr(p, "resolved", True): continue
+        delay = p.get("actual_delay", 0) if isinstance(p, dict) else getattr(p, "actual_delay", 0)
+        if delay > 0:
+            items.append({"entity": "prediction", "name": p.get("prediction_statement", str(p)),
+                         "original_confidence": 7, "adjusted_confidence": max(2, 7 - delay),
+                         "reason": f"Delayed by {delay} periods.",
+                         "recommendation": "Update prediction or accept revised outcome."})
+    return {"forecasts": items, "total": len(items),
+            "summary": f"{len(items)} item(s) need reforecasting." if items else "All items on track."}
+
+# --- Velocity ---
+def velocity_review(records, queue, impact, workflow_runs, estimates):
+    if not records: return {"message": "No history data for velocity analysis."}
+    weeks = max(1, len(records) // 7)
+    total_minutes = sum(r.get("total_minutes", 0) for r in records if isinstance(r, dict))
+    completed = sum(1 for q in queue if q.status == "completed")
+    deep_work_blocks = sum(1 for wr in workflow_runs if wr.actual_minutes >= 60 and wr.completed)
+    impacts_per_month = len(impact) / max(1, weeks / 4)
+    assets_created = sum(1 for i in impact if i.impact_type == "asset_reused")
+    return {"weekly_strategic_minutes": round(total_minutes / max(1, weeks), 0),
+            "completed_queue_items": completed,
+            "completed_deep_work_blocks": deep_work_blocks,
+            "impacts_per_month": round(impacts_per_month, 1),
+            "assets_created_or_reused": assets_created,
+            "summary": f"Strategic velocity: {round(total_minutes / max(1, weeks), 0)} min/week."}
+
+# --- Indicators ---
+def load_indicators():
+    data = load_records(INDICATORS_PATH)
+    if not data:
+        defaults = [Indicator(**i) for i in DEFAULT_INDICATORS]
+        save_indicators(defaults)
+        return defaults
+    return [Indicator(**i) for i in data]
+
+def save_indicators(inds): save_records(INDICATORS_PATH, [i.__dict__ for i in inds])
+
+def indicator_review():
+    inds = load_indicators()
+    leaders = [i for i in inds if i.indicator_type == "leading"]
+    laggers = [i for i in inds if i.indicator_type == "lagging"]
+    warnings = [i for i in inds if i.current_value <= i.warning_threshold and i.target_value > 0]
+    return {"total": len(inds), "leading": len(leaders), "lagging": len(laggers),
+            "warnings": [{"name": i.name, "current": i.current_value, "warning": i.warning_threshold,
+                          "target": i.target_value, "goal": i.strategic_goal} for i in warnings],
+            "by_goal": {g: len([i for i in inds if i.strategic_goal == g]) for g in STRATEGIC_GOALS},
+            "summary": f"{len(warnings)} indicator(s) below warning threshold." if warnings else "All indicators healthy."}
+
+# --- Review Board ---
+def review_board(data):
+    ms = metrics_review(); ir = impact_review(); roi = roi_review(data.get("projects", []),
+        data.get("workflows", []), data.get("relationships", []),
+        data.get("opportunities", []), data.get("assets", []), data.get("metrics", []))
+    vel = velocity_review(data.get("records", []), data.get("queue", []),
+                          data.get("impact", []), data.get("workflow_runs", []), data.get("estimates", []))
+    inds = indicator_review(); rf_result = reforecast(data.get("okrs", []), data.get("metrics", []),
+        data.get("predictions", []), data.get("estimates", []), data.get("queue", []))
+    risks = data.get("risks", [])
+    return {"strategic_thesis": "Advance research, secure funding, build collaborations.",
+            "metrics": ms, "impact": ir, "roi": roi, "velocity": vel,
+            "indicators": inds, "reforecast": rf_result,
+            "top_risks": [getattr(r, "title", str(r)) for r in risks[:3]] if risks else [],
+            "recommended_decisions": ["Increase grant-writing blocks" if ms.get("below_target", 0) > 0 else "Maintain current allocation.",
+                                      "Follow up stale relationships" if len(data.get("relationships", [])) > 0 else ""]}
+
+# --- Contracts ---
+def load_contracts():
+    data = load_records(CONTRACTS_PATH)
+    return [Contract(**c) for c in data] if data else []
+
+def save_contracts(cs): save_records(CONTRACTS_PATH, [c.__dict__ for c in cs])
+
+def contract_review():
+    cs = load_contracts()
+    if not cs: return {"total": 0, "message": "No contracts. Use --add-contract."}
+    active = [c for c in cs if c.status == "active"]
+    past_due = [c for c in active if c.review_date and c.review_date < today_str()]
+    return {"total": len(cs), "active": len(active), "past_due_review": len(past_due),
+            "latest": [{"title": c.title, "commitment": c.commitment[:60], "status": c.status} for c in cs[:5]],
+            "summary": f"{len(active)} active contracts, {len(past_due)} past review date."}
+
+# --- Adherence ---
+def adherence_review(rhythms, contracts, doctrine, okrs, records):
+    score = 0; max_score = 100; details = {}
+    # Rhythms (30 pts)
+    rr = rhythm_review(rhythms)
+    rhythm_pct = (rr["active"] - len(rr["overdue"])) / max(rr["active"], 1) * 30
+    score += rhythm_pct; details["rhythms"] = round(rhythm_pct, 1)
+    # Contracts (25 pts)
+    cs = contract_review()
+    contract_pct = ((cs.get("active", 0) - cs.get("past_due_review", 0)) / max(cs.get("active", 0), 1)) * 25 if cs.get("active", 0) > 0 else 25
+    score += contract_pct; details["contracts"] = round(contract_pct, 1)
+    # Doctrine (15 pts)
+    doctrine_score = 15 if doctrine else 5; score += doctrine_score; details["doctrine"] = doctrine_score
+    # OKRs (15 pts)
+    if okrs:
+        active_okrs = [o for o in okrs if o.status == "active"]
+        if active_okrs:
+            krs_list = []
+            for o in active_okrs:
+                krs = o.key_results if isinstance(o.key_results, list) else []
+                krs_list.extend(krs)
+            okr_pct = sum(kr.progress_percent if isinstance(kr, KeyResult) else kr.get("progress_percent", 0)
+                         for kr in krs_list) / max(len(krs_list), 1)
+            okr_score = okr_pct / 100 * 15
+        else: okr_score = 15
+    else: okr_score = 5
+    score += okr_score; details["okrs"] = round(okr_score, 1)
+    # Sprint/records (15 pts)
+    sprint_score = 15 if records and len(records) >= 1 else 5; score += sprint_score; details["sprint"] = sprint_score
+    return {"adherence_score": round(score, 1), "details": details,
+            "strengths": [k for k, v in details.items() if v >= 20],
+            "weaknesses": [k for k, v in details.items() if v < 10],
+            "summary": f"Adherence: {round(score, 1)}/100."}
+
+# --- Rubrics & Output Scoring ---
+def load_rubrics():
+    data = load_records(RUBRICS_PATH)
+    if not data:
+        rubrics = [Rubric(rubric_id=k, **v) for k, v in DEFAULT_RUBRICS.items()]
+        save_records(RUBRICS_PATH, [r.__dict__ for r in rubrics])
+        return rubrics
+    return [Rubric(**r) for r in data]
+
+def load_output_scores():
+    data = load_records(OUTPUT_SCORES_PATH)
+    return [OutputScore(**o) for o in data] if data else []
+
+def save_output_scores(oss): save_records(OUTPUT_SCORES_PATH, [o.__dict__ for o in oss])
+
+def score_output(output_title, output_type, rubric_id=None, scores=None):
+    """Score an output using a rubric."""
+    rubrics = load_rubrics()
+    rubric = next((r for r in rubrics if r.rubric_id == rubric_id or r.output_type == output_type), None)
+    if not rubric and rubrics: rubric = rubrics[0]
+    oss = load_output_scores()
+    os_obj = OutputScore(score_id=uid(), date=today_str(), output_title=output_title,
+                         output_type=output_type, rubric_id=rubric.rubric_id if rubric else "")
+    if scores and rubric:
+        n = len(rubric.criteria)
+        for i, (criterion, score_val) in enumerate(zip(rubric.criteria[:len(scores)], scores)):
+            os_obj.scores_by_criterion[criterion] = score_val
+        os_obj.overall_score = round(sum(scores) / len(scores), 1) if scores else 0
+    return os_obj
+
+# --- Attribution ---
+def attribution_review(impacts, projects, workflows, relationships, assets):
+    if not impacts: return {"total": 0, "message": "No impacts for attribution analysis."}
+    results = []
+    for imp in impacts[:5]:
+        attributions = []
+        if imp.linked_project_id: attributions.append("project")
+        if imp.linked_relationship_id: attributions.append("relationship")
+        if imp.linked_asset_id: attributions.append("asset")
+        if not attributions: attributions = ["direct execution"]
+        results.append({"impact": imp.title, "type": imp.impact_type,
+                       "magnitude": imp.magnitude, "attributions": attributions,
+                       "recommendation": "Reuse linked asset and turn into formal workflow." if "asset" in attributions else "Log more linked entities for better attribution."})
+    return {"results": results, "summary": f"{len(results)} impact(s) analyzed."}
+
+# --- Flywheel Detector ---
+def flywheel_review(impacts, projects, relationships, assets, evidence):
+    flywheels = []
+    research_impacts = [i for i in impacts if i.strategic_goal == "research_publication"]
+    influence_impacts = [i for i in impacts if i.strategic_goal == "public_influence"]
+    industry_impacts = [i for i in impacts if i.strategic_goal == "industry_collaboration"]
+    grant_impacts = [i for i in impacts if i.strategic_goal == "grant_funding"]
+    if research_impacts and influence_impacts and industry_impacts:
+        flywheels.append({"flywheel": "Research → Public Influence → Industry Collaboration",
+                         "evidence": f"{len(research_impacts)} research, {len(influence_impacts)} influence, {len(industry_impacts)} industry impacts.",
+                         "recommendation": "Create repeatable workflow: paper insight → public explanation → targeted collaborator follow-up."})
+    if research_impacts and grant_impacts:
+        flywheels.append({"flywheel": "Research → Grant → More Research",
+                         "evidence": f"Research and grant impacts coexist.",
+                         "recommendation": "Use grant concept note workflow to convert research insights into fundable proposals."})
+    if not flywheels:
+        flywheels.append({"flywheel": "Undetected", "evidence": "Insufficient impact data to detect flywheels.",
+                         "recommendation": "Record more impact events with linked entities."})
+    return {"flywheels": flywheels, "summary": f"{len(flywheels)} potential flywheel(s) detected."}
+
+# --- Decay Detector ---
+def decay_review(relationships, projects, assets, assumptions, predictions, risks, workflows, okrs):
+    decay = []
+    now = date.today()
+    for r in relationships:
+        last = getattr(r, "last_contact_date", "")
+        if last and last < (now - timedelta(days=60)).isoformat():
+            decay.append({"type": "relationship", "name": getattr(r, "name", ""),
+                         "issue": f"No contact in {(now - date.fromisoformat(last)).days} days."})
+    for p in projects:
+        if getattr(p, "status", "active") == "active" and getattr(p, "last_updated", ""):
+            if getattr(p, "last_updated", "") < (now - timedelta(days=30)).isoformat():
+                decay.append({"type": "project", "name": getattr(p, "name", str(p)),
+                             "issue": "No progress update in 30+ days."})
+    for a in assets:
+        if getattr(a, "reuse_count", 0) == 0 and getattr(a, "created_date", ""):
+            if getattr(a, "created_date", "") < (now - timedelta(days=90)).isoformat():
+                decay.append({"type": "asset", "name": getattr(a, "name", ""),
+                             "issue": "Created 90+ days ago, never reused."})
+    for a in assumptions:
+        last = getattr(a, "last_reviewed", "")
+        if last and last < (now - timedelta(days=90)).isoformat():
+            decay.append({"type": "assumption", "name": getattr(a, "statement", str(a))[:50],
+                         "issue": "Not reviewed in 90+ days."})
+    for p in predictions:
+        if not getattr(p, "resolved", False):
+            decay.append({"type": "prediction", "name": getattr(p, "prediction_statement", str(p))[:50],
+                         "issue": "Unresolved prediction."})
+    for r in risks:
+        if not getattr(r, "mitigation_owner", ""):
+            decay.append({"type": "risk", "name": getattr(r, "title", str(r)),
+                         "issue": "No mitigation owner."})
+    return {"decay_items": decay, "total": len(decay),
+            "summary": f"{len(decay)} decaying strategic item(s)." if decay else "No strategic decay detected."}
+
+# --- Optimized Rebalance ---
+def rebalance_optimized(available_hours, energy_level, config, okrs, relationships, contracts, queue, risks):
+    cfg = config or DEFAULT_CONFIG
+    baseline = cfg.get("strategic_baseline", {g: 15 for g in STRATEGIC_GOALS})
+    total_h = available_hours or 25
+    # Start from baseline scaled to available hours
+    alloc = {g: round(baseline.get(g, 15) / 100 * total_h, 1) for g in STRATEGIC_GOALS}
+    # Adjust for energy
+    if energy_level and energy_level <= 5: alloc["admin_maintenance"] = min(alloc["admin_maintenance"], total_h * 0.15)
+    # Adjust for OKRs
+    if okrs:
+        active = [o for o in okrs if o.status == "active"]
+        for o in active:
+            if o.strategic_goal in alloc: alloc[o.strategic_goal] += 0.5
+    # Adjust for overdue follow-ups
+    stale_rels = sum(1 for r in relationships if getattr(r, "last_contact_date", "") and
+                     getattr(r, "last_contact_date", "") < (date.today() - timedelta(days=45)).isoformat())
+    if stale_rels > 2: alloc["industry_collaboration"] += 1
+    # Protect deep work
+    deep_work_goals = ["research_publication", "grant_funding", "deeptech_venture"]
+    for g in deep_work_goals:
+        if alloc.get(g, 0) < total_h * 0.1: alloc[g] = round(total_h * 0.1, 1)
+    # Admin cap
+    admin_cap = total_h * 0.25 if energy_level and energy_level >= 7 else total_h * 0.15
+    alloc["admin_maintenance"] = min(alloc.get("admin_maintenance", 2), admin_cap)
+    return {"allocation": alloc, "total_hours": total_h, "energy_level": energy_level or 7,
+            "constraints": "3 deep-work blocks, max 2 high-focus tasks/day, 2 relationship follow-ups/week.",
+            "recommendations": [f"Protect {alloc.get(g, 0):.1f}h for {g}" for g in deep_work_goals if alloc.get(g, 0) >= total_h * 0.1]}
+
+# --- CSV Export / Import ---
+import csv as csv_module
+
+def export_csv(store_name, export_path):
+    paths = {"metrics": METRICS_PATH, "projects": PROJECTS_PATH, "opportunities": OPPORTUNITIES_PATH,
+             "impact": IMPACT_PATH, "risks": RISKS_PATH}
+    if store_name not in paths: return {"error": f"Unknown store '{store_name}'. Options: {list(paths.keys())}"}
+    path = paths[store_name]
+    if not path.exists(): return {"error": f"Store '{store_name}' is empty."}
+    data = json.loads(path.read_text())
+    records = data.get("records", data) if isinstance(data, dict) else data
+    if not isinstance(records, list) or not records:
+        return {"error": f"No records in '{store_name}'."}
+    export_path = Path(export_path) if export_path else Path(f"{store_name}_export.csv")
+    with open(export_path, "w", newline="") as f:
+        writer = csv_module.DictWriter(f, fieldnames=records[0].keys())
+        writer.writeheader(); writer.writerows(records)
+    return {"exported": str(export_path), "records": len(records), "store": store_name}
+
+def import_csv(store_name, import_path):
+    paths = {"metrics": (METRICS_PATH, "metrics"), "projects": (PROJECTS_PATH, "projects"),
+             "opportunities": (OPPORTUNITIES_PATH, "opportunities"), "impact": (IMPACT_PATH, "impact"),
+             "risks": (RISKS_PATH, "risks")}
+    if store_name not in paths: return {"error": f"Unknown store '{store_name}'."}
+    path, _ = paths[store_name]
+    import_path = Path(import_path)
+    if not import_path.exists(): return {"error": f"File not found: {import_path}"}
+    with open(import_path, "r", newline="") as f:
+        reader = csv_module.DictReader(f)
+        records = list(reader)
+    existing = json.loads(path.read_text()) if path.exists() else []
+    existing_records = existing.get("records", existing) if isinstance(existing, dict) else existing
+    if isinstance(existing_records, list): existing_records.extend(records)
+    else: existing_records = records
+    save_records(path, existing_records)
+    return {"imported": len(records), "store": store_name, "total_records": len(existing_records)}
+
+# --- AI Performance Review Prompt ---
+def ai_performance_review_prompt():
+    metrics_data = json.dumps({"metrics": metrics_review()}, default=str, indent=2)
+    impact_data = json.dumps({"impact": impact_review()}, default=str, indent=2)
+    return f"""=== AI PERFORMANCE REVIEW PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+
+You are a board of strategic advisors conducting a performance review.
+Roles: Chief of Staff, Research Mentor, Grant Strategist, Execution Coach, Founder/Investor, Sustainability Advisor.
+
+Review the strategic performance data and answer:
+
+1. What is working? (cite specific metrics or impacts)
+2. What is NOT working?
+3. What is overestimated?
+4. What is underestimated?
+5. What should be doubled down on?
+6. What should be killed immediately?
+7. What should be measured next?
+8. Recommended 30-day correction plan.
+
+--- PERFORMANCE DATA ---
+{metrics_data}
+{impact_data}
+
+--- END DATA ---
+Be ruthlessly honest. Prioritize long-term compounding over short-term comfort.
+=== END AI PERFORMANCE REVIEW PROMPT ==="""
