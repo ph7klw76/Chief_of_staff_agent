@@ -1,5 +1,6 @@
 @echo off
 title Building Chief of Staff Agent .exe
+cd /d "%~dp0"
 echo =============================================================
 echo   Chief of Staff Agent — Build Windows .exe
 echo =============================================================

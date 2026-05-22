@@ -1,5 +1,6 @@
 @echo off
 title Chief of Staff Agent
+cd /d "%~dp0"
 echo Starting Chief of Staff Agent v10...
 echo.
 
