@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Chief of Staff Agent v7 — strategic simulation, orchestration & governance (stdlib only).
+"""Chief of Staff Agent v8 — execution orchestration system (stdlib only).
 Usage: python3 chief_of_staff_agent.py [MODE]
 Core: --demo | --dashboard | --monthly-review | --weekly-review | --strategy-memo
-      --multi-agent-review | --ai-review | --antifragile-review | --scenario
-V7:   --simulate [--horizon N] | --tradeoff | --rhythm | --rhythm-review
-      --identity-review | --capital-review | --plan-30 | --plan-90 | --plan-365
-      --backcast | --okrs | --okr-review | --rebalance
-      --integrity-check | --repair-integrity | --search QUERY
-      --report-pack | --ai-council | --migrate
-Other: --json | --export FILE | --save-history | --reflect YYYY-MM-DD | --days N
+V8:   --workflows | --run-workflow ID | --generate-sop | --project-playbook ID
+      --queue | --add-to-queue | --queue-review | --compile-next-actions
+      --graph | --graph-review | --execution-packet ID
+      --draft-prompt TYPE | --prepare-meeting | --followups | --sprint-plan
+      --startup | --shutdown | --asset-opportunities | --capture | --captures
+      --context-prompt Q | --export-context Q [--redact]
+      --dashboard-role ROLE | --one-page
+V7:   --simulate | --tradeoff | --rhythm | --identity-review | --capital-review | --plan-30/90/365 | etc.
+Other: --json | --export FILE | --save-history | --days N
 """
 
 from __future__ import annotations
@@ -859,6 +861,258 @@ def migrate_cmd():
     print(SEP)
 
 # ======================================================================
+# V8 — EXECUTION ORCHESTRATION
+# ======================================================================
+def workflows_cmd():
+    wfs=load_workflows()
+    print(f"\n  EXECUTION WORKFLOWS ({len(wfs)})");print(SEP)
+    for w in wfs:print(f"  {w.workflow_id}  {w.name:<45s}  {w.category:<20s}  {w.estimated_total_minutes}min")
+    print(SEP)
+
+def add_workflow_cmd():
+    print("\n  ADD WORKFLOW");print("-"*40)
+    print("  Categories:");[print(f"    {i+1}. {c}")for i,c in enumerate(WORKFLOW_CATEGORIES)]
+    try:cat_idx=int(input("  Category (1-{0}): ".format(len(WORKFLOW_CATEGORIES))));cat=WORKFLOW_CATEGORIES[cat_idx-1]
+    except:cat="research_workflow"
+    print("  Strategic goals:");[print(f"    {i+1}. {g}")for i,g in enumerate(STRATEGIC_GOALS)]
+    try:sg_idx=int(input("  Goal (1-7): "));sg=STRATEGIC_GOALS[sg_idx-1]
+    except:sg="research_publication"
+    w=Workflow(workflow_id=uid(),name=input("  Name: ").strip(),category=cat,strategic_goal=sg,description=input("  Description: ").strip(),trigger=input("  Trigger: ").strip())
+    print("  Steps (enter blank line to finish):")
+    while True:
+        step=input("    Step: ").strip()
+        if not step:break
+        w.steps.append(step)
+    w.expected_output=input("  Expected output: ").strip()
+    try:w.estimated_total_minutes=int(input("  Estimated minutes: ").strip()or"60")
+    except:w.estimated_total_minutes=60
+    wfs=load_workflows();wfs.append(w);save_workflows(wfs);print(f"  Workflow '{w.name}' added.")
+
+def run_workflow_cmd(wf_id):
+    r=run_workflow(wf_id)
+    if not r:print(f"  Workflow '{wf_id}' not found.");return
+    w=r["workflow"]
+    print(f"\n  RUN WORKFLOW: {w.name}");print(SEP)
+    print(f"  Description: {w.description}")
+    print(f"  Estimated: {r['estimated_minutes']} minutes")
+    print(f"\n  INPUTS REQUIRED:")
+    for inp in r["inputs"]:print(f"    - {inp}")
+    print(f"\n  STEPS:")
+    for step in r["steps"]:print(f"    {step}")
+    print(f"\n  EXPECTED OUTPUT: {r['expected_output']}")
+    print(SEP)
+
+def sop_cmd(template=None, export_path=None):
+    if template:
+        r=generate_sop(template)
+        if r["sop"]:
+            sop=r["sop"];print(f"\n  SOP: {sop['title']}");print(SEP)
+            for k in ["purpose","when_to_use","inputs","steps","quality_checklist","common_mistakes","definition_of_done"]:
+                val=sop.get(k,"")
+                if isinstance(val,list):val=", ".join(val)
+                print(f"  {k.replace('_',' ').upper()}: {val}")
+            print(SEP)
+            if export_path:Path(export_path).write_text("\n".join(f"{k}: {v}" for k,v in sop.items()));print(f"  Exported to {export_path}")
+    else:
+        r=generate_sop();print(f"\n  AVAILABLE SOP TEMPLATES:");[print(f"    - {t}")for t in r["templates"]]
+        print(f"  Use --generate-sop --export TEMPLATE_NAME to generate one.")
+
+def playbook_cmd(project_id, export_path=None):
+    projs=load_projects();proj=next((p for p in projs if p.project_id==project_id),None)
+    if not proj:print(f"  Project '{project_id}' not found.");return
+    opps=load_opps();risks=load_risks();assets=load_assets();rels=load_relationships();decs=load_decisions()
+    pb=project_playbook(proj,opps,risks,assets,rels,decs)
+    print(f"\n  PROJECT PLAYBOOK: {pb['project_name']}");print(SEP)
+    for k,v in pb.items():
+        if k in ("project_id","project_name","status"):continue
+        if isinstance(v,list):print(f"\n  {k.upper()}:");[print(f"    - {item}")for item in v]
+        else:print(f"  {k.replace('_',' ').upper()}: {v}")
+    print(SEP)
+    if export_path:
+        lines=[f"{k}: {v}"for k,v in pb.items()];Path(export_path).write_text("\n".join(lines));print(f"  Exported to {export_path}")
+
+def queue_cmd():
+    qs=load_queue();qr=queue_review()
+    print(f"\n  EXECUTION QUEUE");print(SEP)
+    print(f"  {qr['summary']}")
+    if qr["top_3"]:
+        print(f"\n  TOP 3:")
+        for q in qr["top_3"]:print(f"    [{q.status}] {q.title[:60]} (priority:{q.priority_score}, {q.estimated_minutes}min)")
+    if qr["quick_wins"]:print(f"\n  QUICK WINS: {len(qr['quick_wins'])} items <= 20 min")
+    if qr["deep_work"]:print(f"\n  DEEP WORK: {len(qr['deep_work'])} items >= 60 min")
+    if qr["blocked_items"]:print(f"\n  BLOCKED: {[q.title[:40] for q in qr['blocked_items']]}")
+    if qr["stale"]:print(f"\n  STALE: {len(qr['stale'])} items not updated in 14+ days")
+    print(SEP)
+
+def add_to_queue_cmd():
+    print("\n  ADD TO QUEUE");print("-"*40)
+    title=input("  Title: ").strip();st=input("  Source type (task/project/opportunity): ").strip()or"task"
+    sid=input("  Source ID (optional): ").strip();sg=input("  Strategic goal (optional): ").strip()
+    try:pri=int(input("  Priority (1-10, default 5): ").strip()or"5")
+    except:pri=5
+    try:mins=int(input("  Estimated minutes (default 30): ").strip()or"30")
+    except:mins=30
+    q=add_to_queue(title,st,sid,sg,pri,mins);print(f"  Queued. ({q.queue_id})")
+
+def complete_queue_item_cmd(qid):
+    qs=load_queue()
+    for i,q in enumerate(qs):
+        if q.queue_id==qid or q.title.lower().startswith(qid.lower()):
+            qs[i].status="completed";qs[i].updated_at=today_str();save_queue(qs)
+            print(f"  Item '{q.title[:50]}' marked completed.");return
+    print(f"  Queue item '{qid}' not found.")
+
+def compile_next_actions_cmd():
+    projs=load_projects();opps=load_opps();risks=load_risks();rels=load_relationships()
+    decs=load_decisions();exps=load_experiments();okrs=load_okrs();outs=load_outcomes();wfs=load_workflows()
+    r=compile_next_actions(projs,opps,risks,rels,decs,exps,okrs,outs,wfs)
+    print(f"\n  NEXT-ACTION COMPILER");print(SEP)
+    print(f"  {r['summary']}")
+    for m in r["missing_actions"]:print(f"    [{m['source']}] {m['name'][:50]}: {m['issue']}")
+    print(SEP)
+
+def graph_cmd():
+    r=graph_review()
+    print(f"\n  STRATEGIC KNOWLEDGE GRAPH");print(SEP)
+    print(f"  {r['summary']}")
+    if r.get("most_depended"):
+        print(f"\n  MOST DEPENDED-ON:");[print(f"    {m['id']} ({m['type']}): {m['deps']} deps")for m in r["most_depended"]]
+    if r.get("disconnected_count",0)>0:
+        print(f"\n  DISCONNECTED: {r['disconnected_count']}")
+        for d in r.get("disconnected",[]):print(f"    {d['id']} ({d['type']}): {d['name']}")
+    print(SEP)
+
+def graph_entity_cmd(entity_id):
+    r=graph_entity(entity_id)
+    if not r:print(f"  Entity '{entity_id}' not found in graph.");return
+    e=r["entity"]
+    print(f"\n  GRAPH ENTITY: {e['id']}");print(SEP)
+    print(f"  Type: {e['type']}");print(f"  Labels: {e['labels']}")
+    print(f"  Edges ({len(r['edges'])}):");[print(f"    {edg['source'][:8]} --[{edg['type']}]--> {edg['target'][:8]}")for edg in r["edges"]]
+    print(SEP)
+
+def execution_packet_cmd(item_id):
+    p=execution_packet(item_id)
+    if not p:print(f"  No execution packet for '{item_id}'.");return
+    print(f"\n  EXECUTION PACKET: {p['title']}");print(SEP)
+    for k,v in p.items():
+        if k=="title":continue
+        if isinstance(v,list):print(f"\n  {k.upper()}:");[print(f"    {i+1}. {s}")for i,s in enumerate(v)]
+        else:print(f"  {k.replace('_',' ').upper()}: {v}")
+    print(SEP)
+
+def draft_prompt_cmd(prompt_type):
+    print(draft_prompt(prompt_type))
+
+def prepare_meeting_cmd():
+    print("\n  MEETING PREPARATION");print(SEP)
+    title=input("  Meeting title: ").strip();person=input("  Person/organization: ").strip()
+    print("  Meeting types:");[print(f"    {i+1}. {t}")for i,t in enumerate(MEETING_TYPES)]
+    try:c=int(input("  Type (1-{0}): ".format(len(MEETING_TYPES))));mt=MEETING_TYPES[c-1]
+    except:mt="research_collaboration"
+    goal=input("  Strategic goal: ").strip();outcome=input("  Desired outcome: ").strip()
+    context=input("  Known context: ").strip()
+    r=prepare_meeting(title,person,mt,goal,outcome,context)
+    print(f"\n  MEETING BRIEF: {r['title']}");print(SEP)
+    for k,v in r.items():
+        if k=="title":continue
+        if isinstance(v,list):print(f"  {k.replace('_',' ').upper()}:");[print(f"    - {item}")for item in v]
+        else:print(f"  {k.replace('_',' ').upper()}: {v}")
+    print(SEP)
+
+def followups_cmd(prompts=False):
+    r=followup_review()
+    print(f"\n  FOLLOW-UP REVIEW");print(SEP)
+    print(f"  {r['summary']}")
+    for f in r["followups"][:10]:
+        print(f"    [{f['source']}] {f['name'][:50]}: {f.get('days_since','?')} days since last contact")
+    if prompts and r["followups"]:
+        print(f"\n  FOLLOW-UP PROMPTS:")
+        for f in r["followups"][:3]:
+            print(f"\n  To: {f['name']}");print(f"  Subject: Following up on our discussion");print(f"  Body: [Personalized follow-up referencing {f['source']}]")
+    print(SEP)
+
+def sprint_plan_cmd():
+    okrs=load_okrs();projs=load_projects();queue=load_queue();opps=load_opps();risks=load_risks()
+    cfg=load_config();rels=load_relationships()
+    r=sprint_planner(okrs,projs,queue,opps,risks,cfg,rels)
+    print(f"\n  WEEKLY SPRINT PLAN");print(SEP)
+    for k,v in r.items():
+        if isinstance(v,list):print(f"  {k.replace('_',' ').upper()}:");[print(f"    - {item}")for item in v]
+        else:print(f"  {k.replace('_',' ').upper()}: {v}")
+    print(SEP)
+
+def startup_cmd():
+    queue=load_queue();projs=load_projects();risks=load_risks()
+    r=startup_ritual(queue,projs,risks)
+    print(f"\n  DAILY STARTUP");print(SEP)
+    print(f"  TODAY'S OBJECTIVE: {r['top_objective']}")
+    print(f"  RISKS TO AVOID TODAY: {', '.join(r['risks_to_avoid']) if r['risks_to_avoid'] else 'none'}")
+    print(f"  ONE THING NOT TO DO: {r['one_thing_not_to_do']}")
+    print(f"\n  FIRST 30 MINUTES:")
+    print(f"  {r['first_30_minutes']}")
+    if r["first_packet"]:
+        p=r["first_packet"];steps=p.get("steps",[])
+        print(f"\n  FIRST EXECUTION PACKET: {p['title']}")
+        if steps:print(f"  Steps:");[print(f"    {i+1}. {s}")for i,s in enumerate(steps)]
+    print(SEP)
+
+def shutdown_cmd():
+    r=shutdown_ritual()
+    print(f"\n  SHUTDOWN COMPLETE — {r['date']}");print(SEP)
+    print(f"  Completed: {r['completed']}");print(f"  Delayed: {r['delayed']}")
+    print(f"  Unexpected: {r['unexpected']}");print(f"  Evidence: {r['evidence_created']}")
+    print(f"  Queued for tomorrow: {r['queued_for_tomorrow']}");print(f"  Lesson: {r['lesson']}")
+    print(SEP)
+
+def asset_opportunities_cmd():
+    records=load_recent_history(30);projs=load_projects();assets=load_assets();wfs=load_workflows()
+    r=asset_opportunities(records,projs,assets,wfs)
+    print(f"\n  ASSET CREATION OPPORTUNITIES");print(SEP)
+    print(f"  {r['summary']}")
+    for rec in r["recommendations"]:print(f"    - {rec}")
+    print(SEP)
+
+def capture_cmd():
+    print("\n  KNOWLEDGE CAPTURE");print(SEP)
+    print("  Types:");[print(f"    {i+1}. {t}")for i,t in enumerate(CAPTURE_TYPES)]
+    try:c=int(input("  Type (1-{0}): ".format(len(CAPTURE_TYPES))));ct=CAPTURE_TYPES[c-1]
+    except:ct="idea"
+    title=input("  Title: ").strip();content=input("  Content: ").strip()
+    goal=input("  Related strategic goal (optional): ").strip()
+    pid=input("  Linked project ID (optional): ").strip()
+    tags=input("  Tags (comma-separated, optional): ").strip()
+    cap=add_capture_interactive_core(ct,title,content,goal,pid,tags)
+    print(f"  Captured. ({cap.capture_id})")
+
+def list_captures_cmd():
+    cs=load_captures()
+    if not cs:print("  No captures. Use --capture.");return
+    print(f"\n  KNOWLEDGE CAPTURES ({len(cs)})");print(SEP)
+    for c in cs:print(f"  {c.capture_id}  [{c.type}] {c.title[:50]}  {c.date}")
+    print(SEP)
+
+def context_prompt_cmd(query,redact=False):
+    print(context_prompt(query,redact))
+
+def export_context_cmd(query,redact=False):
+    print(context_prompt(query,redact))
+
+def role_dashboard_cmd(role):
+    r=role_dashboard(role)
+    print(f"\n  {role.upper()} DASHBOARD");print(SEP)
+    for k,v in r.items():
+        if k in ("role","strategic_goals"):continue
+        if isinstance(v,list):print(f"\n  {k.upper()}:");[print(f"    - {item}")for item in v[:5]]
+    print(SEP)
+
+def one_page_cmd():
+    r=one_page()
+    print(f"\n  ONE-PAGE STRATEGIC OVERVIEW — {today_str()}");print(SEP)
+    for k,v in r.items():print(f"  {k.replace('_',' ').upper()}: {v}")
+    print(SEP)
+
+# ======================================================================
 # V6 — REVIEWS
 # ======================================================================
 def calibration_review_cmd():
@@ -1593,9 +1847,39 @@ def main():
     g.add_argument("--report-pack",action="store_true",help="Generate report pack")
     g.add_argument("--ai-council",action="store_true",help="AI council prompt")
     g.add_argument("--migrate",action="store_true",help="Migrate stores V6→V7")
+    # V8 args
+    g.add_argument("--workflows",action="store_true",help="List execution workflows")
+    g.add_argument("--add-workflow",action="store_true",help="Add execution workflow")
+    g.add_argument("--run-workflow",type=str,metavar="WF_ID",help="Run a workflow by ID")
+    g.add_argument("--workflow-review",action="store_true",help="Review all workflows")
+    g.add_argument("--generate-sop",action="store_true",help="Generate SOP from template")
+    g.add_argument("--project-playbook",type=str,metavar="PROJECT_ID",help="Generate project playbook")
+    g.add_argument("--queue",action="store_true",help="View execution queue")
+    g.add_argument("--add-to-queue",action="store_true",help="Add item to execution queue")
+    g.add_argument("--queue-review",action="store_true",help="Review execution queue")
+    g.add_argument("--complete-queue-item",type=str,metavar="QID",help="Mark queue item complete")
+    g.add_argument("--compile-next-actions",action="store_true",help="Find missing next actions")
+    g.add_argument("--graph",action="store_true",help="Show knowledge graph summary")
+    g.add_argument("--graph-entity",type=str,metavar="ENTITY_ID",help="Show graph entity details")
+    g.add_argument("--graph-review",action="store_true",help="Review graph structure")
+    g.add_argument("--execution-packet",type=str,metavar="ITEM_ID",help="Generate execution packet")
+    g.add_argument("--draft-prompt",type=str,metavar="TYPE",help="Generate AI prompt (grant/industry-email/linkedin/lecture/paper-review/venture)")
+    g.add_argument("--prepare-meeting",action="store_true",help="Prepare meeting brief")
+    g.add_argument("--followups",action="store_true",help="Review follow-ups due")
+    g.add_argument("--sprint-plan",action="store_true",help="Generate weekly sprint plan")
+    g.add_argument("--startup",action="store_true",help="Daily startup ritual")
+    g.add_argument("--shutdown",action="store_true",help="Daily shutdown reflection")
+    g.add_argument("--asset-opportunities",action="store_true",help="Find asset creation opportunities")
+    g.add_argument("--capture",action="store_true",help="Capture knowledge/idea/lesson")
+    g.add_argument("--captures",action="store_true",help="List knowledge captures")
+    g.add_argument("--context-prompt",type=str,metavar="QUERY",help="Build context prompt from local data")
+    g.add_argument("--export-context",type=str,metavar="QUERY",help="Export context with optional redaction")
+    g.add_argument("--dashboard-role",type=str,metavar="ROLE",help="Role-specific dashboard (researcher/pi/lecturer/collaborator/founder/public-intellectual)")
+    g.add_argument("--one-page",action="store_true",help="One-page strategic overview")
     g.add_argument("--reflect",type=str,metavar="YYYY-MM-DD",help="End-of-day reflection")
     g.add_argument("--project",type=str,metavar="PROJECT_ID",help="Project detail")
     p.add_argument("--json",action="store_true",help="Clean JSON output")
+    p.add_argument("--redact",action="store_true",help="Redact sensitive info in export")
     p.add_argument("--export",type=str,metavar="FILE",help="Save JSON/text to FILE")
     p.add_argument("--save-history",action="store_true",help="Persist daily plan")
     p.add_argument("--days",type=int,default=7,help="Days for review (default 7)")
@@ -1674,6 +1958,39 @@ def main():
     if args.report_pack: report_pack_cmd(); return
     if args.ai_council: ai_council_cmd(); return
     if args.migrate: migrate_cmd(); return
+    # V8 dispatch
+    if args.workflows: workflows_cmd(); return
+    if args.add_workflow: add_workflow_cmd(); return
+    if args.run_workflow: run_workflow_cmd(args.run_workflow); return
+    if args.workflow_review: workflows_cmd(); return
+    if args.generate_sop:
+        if args.export: sop_cmd(args.export, args.export)
+        else:
+            print("\n  Available SOP templates:");[print(f"    - {t}")for t in DEFAULT_SOP_TEMPLATES.keys()]
+            print(f"  Use --generate-sop --export TEMPLATE_NAME to generate one.")
+        return
+    if args.project_playbook: playbook_cmd(args.project_playbook, args.export); return
+    if args.queue: queue_cmd(); return
+    if args.add_to_queue: add_to_queue_cmd(); return
+    if args.queue_review: queue_cmd(); return
+    if args.complete_queue_item: complete_queue_item_cmd(args.complete_queue_item); return
+    if args.compile_next_actions: compile_next_actions_cmd(); return
+    if args.graph or args.graph_review: graph_cmd(); return
+    if args.graph_entity: graph_entity_cmd(args.graph_entity); return
+    if args.execution_packet: execution_packet_cmd(args.execution_packet); return
+    if args.draft_prompt: draft_prompt_cmd(args.draft_prompt); return
+    if args.prepare_meeting: prepare_meeting_cmd(); return
+    if args.followups: followups_cmd(prompts=bool(args.export)); return
+    if args.sprint_plan: sprint_plan_cmd(); return
+    if args.startup: startup_cmd(); return
+    if args.shutdown: shutdown_cmd(); return
+    if args.asset_opportunities: asset_opportunities_cmd(); return
+    if args.capture: capture_cmd(); return
+    if args.captures: list_captures_cmd(); return
+    if args.context_prompt: context_prompt_cmd(args.context_prompt, args.redact); return
+    if args.export_context: export_context_cmd(args.export_context, args.redact); return
+    if args.dashboard_role: role_dashboard_cmd(args.dashboard_role); return
+    if args.one_page: one_page_cmd(); return
     if args.dashboard: dashboard(); return
     if args.monthly_review: monthly_review(days=args.days); return
     if args.weekly_review: weekly_review(days=args.days); return

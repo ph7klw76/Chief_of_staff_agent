@@ -10,6 +10,7 @@ from collections import defaultdict
 
 SCHEMA_VERSION = "6.0"
 CURRENT_SCHEMA_VERSION = "7.0"
+SCHEMA_VERSION_V8 = "8.0"
 STRATEGIC_GOALS = ["research_publication","grant_funding","industry_collaboration","teaching_excellence","public_influence","deeptech_venture","admin_maintenance"]
 PROJECT_CATEGORIES = ["research_project","grant_proposal","industry_collaboration","teaching_project","public_influence","deeptech_venture","personal_system"]
 OPPORTUNITY_TYPES = ["grant","collaboration","industry_partner","paper","conference","student_project","startup_idea","media_visibility","teaching_innovation"]
@@ -69,6 +70,45 @@ DEFAULT_IDENTITIES = {
     "strategic_leader":"Be a strategic leader who builds systems, not just outputs.",
 }
 REVERSIBILITY_CLASSES = {"one_way_door":"Hard to reverse — requires major commitment","two_way_door":"Easy to reverse — low-cost decision","experiment_first":"Should be tested before full commitment"}
+
+# V8 store paths
+WORKFLOWS_PATH = Path("chief_of_staff_workflows.json")
+EXECUTION_QUEUE_PATH = Path("chief_of_staff_execution_queue.json")
+GRAPH_PATH = Path("chief_of_staff_graph.json")
+CAPTURES_PATH = Path("chief_of_staff_captures.json")
+
+# V8 constants
+WORKFLOW_CATEGORIES = ["research_workflow","grant_workflow","industry_collaboration_workflow","teaching_workflow","public_influence_workflow","venture_workflow","admin_workflow","reflection_workflow"]
+MEETING_TYPES = ["research_collaboration","industry_partner","grant_partner","student_supervision","teaching_meeting","venture_discussion","administrative_meeting"]
+CAPTURE_TYPES = ["idea","insight","evidence","lesson","quote","experiment_result","meeting_note","paper_note","grant_note","teaching_note","venture_note"]
+DRAFT_PROMPT_TYPES = ["grant","industry-email","linkedin","lecture","paper-review","venture"]
+GRAPH_NODE_TYPES = ["task","project","opportunity","relationship","risk","decision","experiment","evidence","assumption","prediction","outcome","asset","workflow","okr","doctrine","capital"]
+GRAPH_EDGE_TYPES = ["supports","depends_on","blocks","contradicts","informs","belongs_to","produces","risks","strengthens","weakens"]
+ROLE_DASHBOARDS = ["researcher","pi","lecturer","collaborator","founder","public-intellectual"]
+
+DEFAULT_WORKFLOWS = [
+    {"workflow_id":"wf_grant_concept","name":"Write one-page grant concept note","category":"grant_workflow","strategic_goal":"grant_funding","description":"Write a focused one-page grant concept note.","trigger":"Grant deadline approaching or new funding call","required_inputs":["funding call details","research idea","preliminary data summary"],"steps":["1. Read the funding call carefully (15 min)","2. Define the core research question (10 min)","3. Draft the novelty statement (15 min)","4. Outline expected outcomes (10 min)","5. Identify key collaborators (5 min)","6. Write the one-page draft (30 min)","7. Review and refine (15 min)"],"expected_output":"One-page concept note ready for internal review","estimated_total_minutes":100,"status":"active"},
+    {"workflow_id":"wf_collab_pitch","name":"Prepare industry collaboration pitch","category":"industry_collaboration_workflow","strategic_goal":"industry_collaboration","description":"Prepare a concise collaboration pitch for industry partners.","trigger":"Industry conference, partner meeting, or cold outreach","required_inputs":["partner background","your relevant expertise","mutual benefit hypothesis"],"steps":["1. Research partner's recent work (15 min)","2. Identify mutual value proposition (10 min)","3. Draft 3-slide pitch outline (15 min)","4. Prepare one specific collaboration idea (10 min)","5. Anticipate objections (10 min)","6. Draft follow-up email draft (10 min)"],"expected_output":"Pitch-ready collaboration outline","estimated_total_minutes":70,"status":"active"},
+    {"workflow_id":"wf_manuscript","name":"Draft manuscript subsection","category":"research_workflow","strategic_goal":"research_publication","description":"Draft one subsection of a manuscript.","trigger":"Manuscript deadline or writing session","required_inputs":["outline","references","data/figures"],"steps":["1. Review the subsection outline (5 min)","2. Gather relevant references (10 min)","3. Write the first draft without editing (25 min)","4. Insert figures and captions (10 min)","5. Self-edit for clarity (15 min)","6. Mark for co-author review (5 min)"],"expected_output":"Draft subsection ready for review","estimated_total_minutes":70,"status":"active"},
+    {"workflow_id":"wf_paper_review","name":"Review research paper strategically","category":"research_workflow","strategic_goal":"research_publication","description":"Strategic paper review focusing on relevance and connections.","trigger":"New paper to review or literature survey","required_inputs":["paper PDF","research questions","note template"],"steps":["1. Skim abstract, figures, conclusion (10 min)","2. Identify the core claim (5 min)","3. Note connection to your research (10 min)","4. Identify weaknesses or gaps (10 min)","5. Note one follow-up experiment idea (5 min)","6. Save citation and notes (5 min)"],"expected_output":"Strategic paper review notes","estimated_total_minutes":45,"status":"active"},
+    {"workflow_id":"wf_lecture","name":"Prepare lecture using reusable assets","category":"teaching_workflow","strategic_goal":"teaching_excellence","description":"Prepare a lecture leveraging reusable templates and assets.","trigger":"Upcoming lecture","required_inputs":["syllabus","previous lecture notes","teaching assets"],"steps":["1. Review learning objectives (5 min)","2. Select reusable teaching module (5 min)","3. Adapt examples for this cohort (15 min)","4. Prepare 3 Socratic questions (10 min)","5. Anticipate common misconceptions (5 min)","6. Prepare diagnostic quiz question (5 min)","7. Test run key explanation (10 min)"],"expected_output":"Lecture-ready materials","estimated_total_minutes":55,"status":"active"},
+    {"workflow_id":"wf_linkedin","name":"Convert research insight into LinkedIn post","category":"public_influence_workflow","strategic_goal":"public_influence","description":"Convert a research insight into a public-facing post.","trigger":"New result, paper, or insight to share","required_inputs":["research insight","target audience","key takeaway"],"steps":["1. Identify the one key insight (5 min)","2. Write a hook sentence (5 min)","3. Explain why it matters in plain language (10 min)","4. Add context or personal reflection (5 min)","5. Draft a call to action (3 min)","6. Review for clarity and accuracy (5 min)"],"expected_output":"LinkedIn post draft","estimated_total_minutes":33,"status":"active"},
+    {"workflow_id":"wf_weekly_review","name":"Run weekly strategic review","category":"reflection_workflow","strategic_goal":"all","description":"Conduct a structured weekly strategic review.","trigger":"End of week (Friday)","required_inputs":["weekly activity log","project statuses","opportunity list"],"steps":["1. Review completed vs delayed tasks (10 min)","2. Check admin percentage (5 min)","3. Review stale opportunities (10 min)","4. Check relationship follow-ups (5 min)","5. Update project statuses (10 min)","6. Plan next week's top 3 outcomes (10 min)","7. Record one lesson or evidence (5 min)"],"expected_output":"Weekly review completed, sprint plan for next week","estimated_total_minutes":55,"status":"active"},
+    {"workflow_id":"wf_opp_followup","name":"Conduct opportunity follow-up","category":"admin_workflow","strategic_goal":"all","description":"Follow up on open opportunities systematically.","trigger":"Weekly or when opportunities become stale","required_inputs":["open opportunities list","last contact dates"],"steps":["1. Sort opportunities by score and staleness (5 min)","2. Identify top 3 to follow up (5 min)","3. Draft follow-up message for each (15 min)","4. Schedule follow-up actions (5 min)","5. Update opportunity statuses (5 min)"],"expected_output":"3 follow-ups completed","estimated_total_minutes":35,"status":"active"},
+    {"workflow_id":"wf_venture_hypothesis","name":"Build deep-tech venture hypothesis","category":"venture_workflow","strategic_goal":"deeptech_venture","description":"Formulate and refine a venture hypothesis.","trigger":"Research yields commercializable insight","required_inputs":["research insight","market context","competitor awareness"],"steps":["1. State the core technical insight (10 min)","2. Identify customer pain point (10 min)","3. Draft value proposition (10 min)","4. Estimate market size hypothesis (10 min)","5. Identify minimum viable experiment (10 min)","6. Note key assumptions to test (5 min)"],"expected_output":"Venture hypothesis one-pager","estimated_total_minutes":55,"status":"active"},
+]
+
+DEFAULT_SOP_TEMPLATES = {
+    "grant_concept_note": {"title":"Grant Concept Note SOP","purpose":"Produce a compelling one-page grant concept note.","when_to_use":"When responding to a funding call or initiating a grant application.","inputs":"Funding call, research idea, preliminary data.","steps":"1. Read the call 2. Define research question 3. Draft novelty statement 4. Outline outcomes 5. Identify collaborators 6. Write draft 7. Review","quality_checklist":["Core question is clear","Novelty is explicit","Outcomes are measurable","Collaborators identified"],"common_mistakes":["Too broad","No clear novelty","Missing collaborators","Ignoring call requirements"],"definition_of_done":"Concept note is reviewed by a colleague and ready for submission.","estimated_minutes":100,"strategic_goal":"grant_funding"},
+    "industry_outreach_email": {"title":"Industry Outreach Email SOP","purpose":"Send effective cold or warm outreach to industry partners.","when_to_use":"When initiating or following up with industry contacts.","inputs":"Contact details, value proposition, collaboration idea.","steps":"1. Research contact 2. Craft subject line 3. Write 3-sentence email 4. Include specific value 5. Propose next step 6. Review 7. Send","quality_checklist":["Subject line is specific","First sentence references their work","Value is clear","Call to action is specific"],"common_mistakes":["Too long","Generic","No clear ask","No follow-up mechanism"],"definition_of_done":"Email sent and follow-up scheduled.","estimated_minutes":30,"strategic_goal":"industry_collaboration"},
+    "research_paper_review": {"title":"Paper Review SOP","purpose":"Review a research paper efficiently and strategically.","when_to_use":"For literature review, peer review, or staying current.","inputs":"Paper PDF, research interests, note template.","steps":"1. Skim abstract/figures/conclusion 2. Identify core claim 3. Note connection to your work 4. Identify gaps 5. Note follow-up idea 6. Save notes","quality_checklist":["Core claim identified","Connection to your work noted","Weakness documented","Follow-up idea recorded"],"common_mistakes":["Reading linearly","No connection to own work","No actionable follow-up"],"definition_of_done":"Notes saved with citation and one follow-up action.","estimated_minutes":45,"strategic_goal":"research_publication"},
+    "manuscript_subsection": {"title":"Manuscript Subsection SOP","purpose":"Draft one subsection of a manuscript efficiently.","when_to_use":"When writing a paper, thesis, or proposal.","inputs":"Outline, references, data/figures.","steps":"1. Review outline 2. Gather references 3. Draft without editing 4. Insert figures 5. Self-edit 6. Mark for review","quality_checklist":["Follows outline","References cited","Figures labeled","Flow is logical"],"common_mistakes":["Editing while writing","No outline","Missing references","Perfectionism on first draft"],"definition_of_done":"Draft subsection written and ready for co-author review.","estimated_minutes":70,"strategic_goal":"research_publication"},
+    "lecture_preparation": {"title":"Lecture Preparation SOP","purpose":"Prepare an effective lecture using reusable assets.","when_to_use":"Before each lecture or teaching session.","inputs":"Syllabus, previous notes, teaching assets.","steps":"1. Review objectives 2. Select module 3. Adapt examples 4. Prepare questions 5. Anticipate misconceptions 6. Prepare quiz 7. Test run","quality_checklist":["Objectives clear","Examples relevant","Questions prepared","Misconceptions addressed"],"common_mistakes":["Overloading content","No interactivity","Ignoring prior knowledge"],"definition_of_done":"Lecture materials complete with questions and examples.","estimated_minutes":55,"strategic_goal":"teaching_excellence"},
+    "linkedin_research_post": {"title":"LinkedIn Research Post SOP","purpose":"Convert research into engaging public content.","when_to_use":"When you have a result, insight, or opinion to share.","inputs":"Research insight, audience, key takeaway.","steps":"1. Identify insight 2. Write hook 3. Explain plainly 4. Add reflection 5. Call to action 6. Review","quality_checklist":["Hook is engaging","Plain language used","Personal reflection included","Call to action present"],"common_mistakes":["Too technical","No hook","No personal angle","No call to action"],"definition_of_done":"Post drafted and reviewed for accuracy.","estimated_minutes":33,"strategic_goal":"public_influence"},
+    "weekly_review": {"title":"Weekly Review SOP","purpose":"Conduct a structured weekly strategic review.","when_to_use":"End of each week.","inputs":"Activity log, project statuses, opportunity list.","steps":"1. Review tasks 2. Check admin 3. Review opportunities 4. Check relationships 5. Update projects 6. Plan next week 7. Record lesson","quality_checklist":["Completed tasks reviewed","Admin % checked","Stale ops followed up","Next week planned"],"common_mistakes":["Skipping review","No action from insights","Ignoring admin creep"],"definition_of_done":"Review completed with lessons recorded and next week planned.","estimated_minutes":55,"strategic_goal":"all"},
+    "monthly_review": {"title":"Monthly Review SOP","purpose":"Strategic monthly review and rebalancing.","when_to_use":"Start of each month.","inputs":"Monthly data, project reports, OKR progress.","steps":"1. Review strategic allocation 2. Check OKR progress 3. Review predictions 4. Check assumptions 5. Update kill-list 6. Rebalance if needed","quality_checklist":["Allocation reviewed","OKRs updated","Stale items killed","Rebalance considered"],"common_mistakes":["Skipping months","Not killing anything","Ignoring prediction drift"],"definition_of_done":"Monthly review complete with updated priorities.","estimated_minutes":90,"strategic_goal":"all"},
+    "opportunity_review": {"title":"Opportunity Review SOP","purpose":"Systematic review and follow-up of opportunities.","when_to_use":"Weekly or when opportunities pile up.","inputs":"Opportunity list, last contact dates.","steps":"1. Sort by score/staleness 2. Pick top 3 3. Draft follow-ups 4. Schedule actions 5. Update statuses","quality_checklist":["Top 3 followed up","Stale ops addressed","Statuses updated"],"common_mistakes":["Not following up","Letting ops decay","No prioritization"],"definition_of_done":"Top 3 opportunities followed up and statuses updated.","estimated_minutes":35,"strategic_goal":"all"},
+}
 
 def uid(): return uuid.uuid4().hex[:8]
 def today_str(): return date.today().isoformat()
@@ -279,6 +319,39 @@ class ScenarioResult:
     publication_progress:int=0;grant_progress:int=0
     venture_progress:int=0;public_influence_effect:int=0
     likely_bottleneck:str="";recommended_correction:str=""
+
+# V8 dataclasses
+@dataclass
+class Workflow:
+    workflow_id:str="";name:str="";category:str="research_workflow";strategic_goal:str="all"
+    description:str="";trigger:str="";required_inputs:list=field(default_factory=list)
+    steps:list=field(default_factory=list);expected_output:str=""
+    estimated_total_minutes:int=60;linked_project_id:str="";linked_outcome_id:str=""
+    status:str="active";created_at:str="";updated_at:str=""
+
+@dataclass
+class QueueItem:
+    queue_id:str="";title:str="";source_type:str="task";source_id:str=""
+    strategic_goal:str="";priority_score:int=5;estimated_minutes:int=30
+    energy_required:int=5;focus_required:int=5;deadline:str=""
+    status:str="queued";next_action:str="";created_at:str="";updated_at:str=""
+
+@dataclass
+class Capture:
+    capture_id:str="";date:str="";type:str="idea";title:str="";content:str=""
+    related_strategic_goal:str="";linked_project_id:str="";linked_opportunity_id:str=""
+    linked_relationship_id:str="";tags:list=field(default_factory=list);next_action:str=""
+
+@dataclass
+class SprintPlan:
+    theme:str="";top_outcomes:list=field(default_factory=list)
+    deep_work_blocks:list=field(default_factory=list)
+    relationship_actions:list=field(default_factory=list)
+    admin_containment:list=field(default_factory=list)
+    risks_to_mitigate:list=field(default_factory=list)
+    assets_to_build:list=field(default_factory=list)
+    kill_defer:list=field(default_factory=list)
+    daily_suggestions:list=field(default_factory=list)
 
 # ======================================================================
 # SCORING
@@ -1512,3 +1585,525 @@ def migrate_all_stores():
     for path in stores:
         results[path.name] = migrate_store(path)
     return {"results": results, "summary": f"Migrated {sum(1 for v in results.values() if v == 'migrated')} stores."}
+
+# ======================================================================
+# V8 — EXECUTION ORCHESTRATION
+# ======================================================================
+
+# --- Workflows ---
+def load_workflows():
+    data = load_records(WORKFLOWS_PATH)
+    if not data:
+        defaults = [Workflow(**w) for w in DEFAULT_WORKFLOWS]
+        save_records(WORKFLOWS_PATH, [w.__dict__ for w in defaults])
+        return defaults
+    return [Workflow(**w) for w in data]
+
+def save_workflows(ws): save_records(WORKFLOWS_PATH, [w.__dict__ for w in ws])
+
+def run_workflow(wf_id):
+    wfs = load_workflows()
+    for w in wfs:
+        if w.workflow_id == wf_id or w.name.lower().startswith(wf_id.lower()):
+            return {"workflow": w, "steps": w.steps, "estimated_minutes": w.estimated_total_minutes, "inputs": w.required_inputs, "expected_output": w.expected_output}
+    return None
+
+def workflow_review():
+    wfs = load_workflows()
+    by_cat = defaultdict(list)
+    for w in wfs: by_cat[w.category].append(w.name)
+    return {"total": len(wfs), "by_category": dict(by_cat), "summary": f"{len(wfs)} workflows across {len(by_cat)} categories."}
+
+# --- SOP Generator ---
+def generate_sop(template_name=None):
+    if template_name and template_name in DEFAULT_SOP_TEMPLATES:
+        return {"template": template_name, "sop": DEFAULT_SOP_TEMPLATES[template_name]}
+    return {"templates": list(DEFAULT_SOP_TEMPLATES.keys()), "sop": None}
+
+def interactive_sop():
+    print("\n  SOP GENERATOR"); print("-" * 50)
+    title = input("  SOP title: ").strip()
+    goal = input("  Strategic goal: ").strip()
+    when_use = input("  When to use: ").strip()
+    inputs = input("  Required inputs: ").strip()
+    output = input("  Expected output: ").strip()
+    steps = input("  Main steps (comma-separated): ").strip()
+    failures = input("  Common failure modes: ").strip()
+    checklist = input("  Quality checklist (comma-separated): ").strip()
+    return {"title": title, "strategic_goal": goal, "when_to_use": when_use,
+            "inputs": inputs, "expected_output": output, "steps": steps,
+            "common_failures": failures, "quality_checklist": checklist,
+            "exported": True}
+
+# --- Project Playbook ---
+def project_playbook(project, opps, risks, assets, relationships, decisions):
+    pname = getattr(project, "name", str(project))
+    pid = getattr(project, "project_id", "")
+    pgoal = getattr(project, "strategic_goal", "research_publication")
+    pstatus = getattr(project, "status", "active")
+    linked_opps = [o for o in opps if getattr(o, "linked_project_id", "") == pid or getattr(o, "project_id", "") == pid]
+    linked_risks = [r for r in risks if getattr(r, "project_id", "") == pid or getattr(r, "linked_project_id", "") == pid]
+    linked_assets = [a for a in assets if getattr(a, "linked_project_id", "") == pid or getattr(a, "project_id", "") == pid]
+    return {"project_name": pname, "project_id": pid, "status": pstatus,
+            "strategic_goal": pgoal, "thesis": f"This project advances {pgoal} through targeted execution.",
+            "success_criteria": getattr(project, "success_criteria", "Define clear success criteria."),
+            "milestones": getattr(project, "milestones", "Break into 3-5 milestones."),
+            "linked_opportunities": [getattr(o, "name", str(o)) for o in linked_opps[:3]],
+            "linked_risks": [getattr(r, "title", str(r)) for r in linked_risks[:3]],
+            "linked_assets": [getattr(a, "name", str(a)) for a in linked_assets[:3]],
+            "weekly_rhythm": "Dedicate 2 focused blocks per week.",
+            "first_5_actions": ["Define scope", "Identify key collaborator", "Draft milestone 1 plan",
+                               "Create project asset template", "Schedule first review"],
+            "kill_criteria": "No progress for 60 days OR strategic goal shifts away."}
+
+# --- Execution Queue ---
+def load_queue():
+    data = load_records(EXECUTION_QUEUE_PATH)
+    return [QueueItem(**q) for q in data] if data else []
+
+def save_queue(qs): save_records(EXECUTION_QUEUE_PATH, [q.__dict__ for q in qs])
+
+def add_to_queue(title, source_type, source_id, strategic_goal="", priority=5, minutes=30):
+    qs = load_queue()
+    q = QueueItem(queue_id=uid(), title=title, source_type=source_type, source_id=source_id,
+                  strategic_goal=strategic_goal, priority_score=priority, estimated_minutes=minutes,
+                  next_action=title, created_at=today_str(), updated_at=today_str())
+    qs.append(q); save_queue(qs); return q
+
+def queue_review():
+    qs = load_queue()
+    active = [q for q in qs if q.status in ("queued", "active")]
+    blocked = [q for q in qs if q.status == "blocked"]
+    completed = [q for q in qs if q.status == "completed"]
+    quick_wins = [q for q in active if q.estimated_minutes <= 20 and q.energy_required <= 5]
+    deep_work = [q for q in active if q.estimated_minutes >= 60 and q.focus_required >= 7]
+    stale = [q for q in active if q.updated_at and q.updated_at < (date.today() - timedelta(days=14)).isoformat()]
+    return {"active": len(active), "blocked": len(blocked), "completed_today": sum(1 for q in completed if q.updated_at >= today_str()),
+            "top_3": sorted(active, key=lambda q: -q.priority_score)[:3],
+            "blocked_items": blocked, "quick_wins": quick_wins, "deep_work": deep_work,
+            "stale": stale, "summary": f"{len(active)} active, {len(blocked)} blocked."}
+
+# --- Next-Action Compiler ---
+def compile_next_actions(projects, opps, risks, relationships, decisions, experiments, okrs, outcomes, workflows):
+    missing = []
+    for p in projects:
+        if not getattr(p, "next_action", ""):
+            missing.append({"source": "project", "name": getattr(p, "name", str(p)), "issue": "No next action defined."})
+    for o in opps:
+        last = getattr(o, "last_touched_date", "")
+        if last and last < (date.today() - timedelta(days=14)).isoformat():
+            missing.append({"source": "opportunity", "name": getattr(o, "name", str(o)), "issue": f"Untouched since {last}."})
+    for r in risks:
+        if not getattr(r, "mitigation_owner", ""):
+            missing.append({"source": "risk", "name": getattr(r, "title", str(r)), "issue": "No mitigation owner."})
+    for r in relationships:
+        last = getattr(r, "last_contact_date", "")
+        if last and last < (date.today() - timedelta(days=30)).isoformat():
+            missing.append({"source": "relationship", "name": getattr(r, "name", str(r)), "issue": f"No contact since {last}."})
+    for d in decisions:
+        if not getattr(d, "actual_outcome", "") and getattr(d, "review_date", ""):
+            if getattr(d, "review_date", "") < today_str():
+                missing.append({"source": "decision", "name": getattr(d, "title", str(d)), "issue": "Review date has passed."})
+    for o in okrs:
+        if getattr(o, "status", "active") == "active":
+            krs = getattr(o, "key_results", [])
+            if isinstance(krs, list):
+                blocked_krs = [k for k in krs if (isinstance(k, dict) and k.get("status") == "blocked") or (hasattr(k, "status") and k.status == "blocked")]
+                if blocked_krs:
+                    missing.append({"source": "okr", "name": getattr(o, "title", str(o)), "issue": f"{len(blocked_krs)} blocked key result(s)."})
+    return {"missing_actions": missing, "total_missing": len(missing),
+            "summary": f"{len(missing)} stale or missing next action(s)." if missing else "All items have current next actions."}
+
+# --- Knowledge Graph ---
+def load_graph():
+    data = load_json(GRAPH_PATH, {})
+    return data.get("nodes", []), data.get("edges", [])
+
+def save_graph(nodes, edges):
+    save_json(GRAPH_PATH, {"nodes": nodes, "edges": edges, "schema_version": SCHEMA_VERSION_V8, "updated_at": today_str()}, is_records=False)
+
+def build_graph():
+    """Build graph from all stores."""
+    nodes = []; edges = []
+    for path, ntype in [(PROJECTS_PATH, "project"), (OPPORTUNITIES_PATH, "opportunity"),
+                         (RISKS_PATH, "risk"), (DECISIONS_PATH, "decision"),
+                         (EXPERIMENTS_PATH, "experiment"), (RELATIONSHIPS_PATH, "relationship"),
+                         (OUTCOMES_PATH, "outcome"), (EVIDENCE_PATH, "evidence"),
+                         (ASSUMPTIONS_PATH, "assumption"), (PREDICTIONS_PATH, "prediction"),
+                         (HYPOTHESES_PATH, "hypothesis"), (ASSETS_PATH, "asset"),
+                         (WORKFLOWS_PATH, "workflow"), (OKRS_PATH, "okr"),
+                         (DOCTRINE_PATH, "doctrine"), (CAPITAL_PATH, "capital")]:
+        if not path.exists(): continue
+        try:
+            data = json.loads(path.read_text())
+            recs = data.get("records", data) if isinstance(data, dict) else data
+            if isinstance(recs, list):
+                for r in recs:
+                    if isinstance(r, dict):
+                        nid = r.get("project_id") or r.get("opportunity_id") or r.get("risk_id") or r.get("decision_id") or r.get("experiment_id") or r.get("relationship_id") or r.get("outcome_id") or r.get("evidence_id") or r.get("assumption_id") or r.get("prediction_id") or r.get("hypothesis_id") or r.get("asset_id") or r.get("workflow_id") or r.get("objective_id") or r.get("doctrine_id") or r.get("capital_id") or uid()
+                        labels = [{"name": r.get("name") or r.get("title") or r.get("statement") or r.get("principle") or ntype}]
+                        nodes.append({"id": nid, "type": ntype, "labels": labels})
+        except: pass
+    # Build edges from linked fields
+    for n in nodes:
+        ntype, nid = n["type"], n["id"]
+        # Find the source record
+        for path, stype in [(PROJECTS_PATH, "project"), (OPPORTUNITIES_PATH, "opportunity")]:
+            if not path.exists(): continue
+            try:
+                data = json.loads(path.read_text())
+                recs = data.get("records", data) if isinstance(data, dict) else data
+                if isinstance(recs, list):
+                    for r in recs:
+                        if isinstance(r, dict) and (r.get("project_id") == nid or r.get("opportunity_id") == nid):
+                            for link_field, edge_type in [("linked_project_id", "depends_on"), ("project_id", "belongs_to"), ("linked_opportunity_id", "informs"), ("linked_outcome_id", "produces")]:
+                                if r.get(link_field) and r.get(link_field) != nid:
+                                    edges.append({"source": nid, "target": r[link_field], "type": edge_type})
+            except: pass
+    save_graph(nodes, edges)
+    return {"nodes": len(nodes), "edges": len(edges), "summary": f"Graph built: {len(nodes)} nodes, {len(edges)} edges."}
+
+def graph_review():
+    nodes, edges = load_graph()
+    node_by_id = {n["id"]: n for n in nodes}
+    if not nodes:
+        build_graph_result = build_graph()
+        nodes, edges = load_graph()
+        node_by_id = {n["id"]: n for n in nodes}
+    # Most depended-on
+    dep_count = defaultdict(int)
+    for e in edges:
+        if e.get("type") == "depends_on": dep_count[e["target"]] += 1
+    most_depended = sorted(dep_count.items(), key=lambda x: -x[1])[:3]
+    # Most connected
+    conn_count = defaultdict(int)
+    for e in edges: conn_count[e["source"]] += 1; conn_count[e["target"]] += 1
+    most_connected = sorted(conn_count.items(), key=lambda x: -x[1])[:3]
+    # Disconnected
+    connected_ids = {e["source"] for e in edges} | {e["target"] for e in edges}
+    disconnected = [n for n in nodes if n["id"] not in connected_ids]
+    return {"total_nodes": len(nodes), "total_edges": len(edges),
+            "most_depended": [{"id": nid, "type": node_by_id.get(nid, {}).get("type", "?"), "deps": cnt} for nid, cnt in most_depended],
+            "most_connected": [{"id": nid, "type": node_by_id.get(nid, {}).get("type", "?"), "connections": cnt} for nid, cnt in most_connected],
+            "disconnected_count": len(disconnected),
+            "disconnected": [{"id": n["id"], "type": n["type"], "name": n["labels"][0]["name"] if n.get("labels") else ""} for n in disconnected[:5]],
+            "summary": f"{len(nodes)} nodes, {len(edges)} edges, {len(disconnected)} disconnected."}
+
+def graph_entity(entity_id):
+    nodes, edges = load_graph()
+    if not nodes: build_graph(); nodes, edges = load_graph()
+    node = next((n for n in nodes if n["id"] == entity_id), None)
+    if not node: return None
+    related_edges = [e for e in edges if e["source"] == entity_id or e["target"] == entity_id]
+    related_ids = set()
+    for e in related_edges: related_ids.add(e["source"]); related_ids.add(e["target"])
+    related_ids.discard(entity_id)
+    return {"entity": node, "edges": related_edges, "related_nodes": [n for n in nodes if n["id"] in related_ids]}
+
+# --- Execution Packet ---
+def execution_packet(item_id):
+    """Generate a concise execution packet for any item."""
+    # Search across multiple stores
+    for path, ntype in [(PROJECTS_PATH, "project"), (OPPORTUNITIES_PATH, "opportunity")]:
+        if not path.exists(): continue
+        try:
+            data = json.loads(path.read_text())
+            recs = data.get("records", data) if isinstance(data, dict) else data
+            if isinstance(recs, list):
+                for r in recs:
+                    if isinstance(r, dict) and (r.get("project_id") == item_id or r.get("opportunity_id") == item_id):
+                        name = r.get("name") or r.get("title", "Unnamed")
+                        goal = r.get("strategic_goal", "")
+                        return {"title": name, "strategic_goal": goal, "why": f"Advances {goal or 'your strategy'}.",
+                                "definition_of_done": r.get("success_criteria", "Complete as defined."),
+                                "estimated_time": f"{r.get('estimated_minutes', 30)} minutes",
+                                "energy_focus": "Medium energy, high focus recommended.",
+                                "inputs": "Review any linked notes or assets.",
+                                "first_10_minutes": "Open relevant documents and review the objective.",
+                                "steps": r.get("steps", ["Start.", "Execute.", "Review."]),
+                                "quality_checklist": ["Objective met?", "Output saved?", "Next action defined?"],
+                                "risks": "Scope creep or interruption.",
+                                "stop_condition": "If blocked for >15 minutes, escalate or defer.",
+                                "next_followup": "Record completion or blocker."}
+        except: pass
+    # Check queue
+    qs = load_queue()
+    for q in qs:
+        if q.queue_id == item_id:
+            return {"title": q.title, "strategic_goal": q.strategic_goal, "why": "Queued for execution.",
+                    "definition_of_done": q.next_action, "estimated_time": f"{q.estimated_minutes} minutes",
+                    "energy_focus": f"Energy {q.energy_required}/10, Focus {q.focus_required}/10",
+                    "inputs": "Check linked project/opportunity.", "first_10_minutes": "Review the task and gather materials.",
+                    "steps": ["Execute.", "Review quality.", "Mark complete."], "quality_checklist": ["Done?"],
+                    "risks": "Interruption.", "stop_condition": "If blocked, mark blocked.", "next_followup": "Update queue."}
+    return None
+
+# --- Draft Prompt Generator ---
+def draft_prompt(prompt_type):
+    prompts = {
+        "grant": """=== AI GRANT PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+Write a one-page grant concept note for my research. Include:
+1. Research question
+2. Novelty statement (why this is new)
+3. Expected outcomes (measurable)
+4. Risk mitigation approach
+5. Key collaborators needed
+Use clear, non-jargon language. Target: funding body reviewer.""",
+        "industry-email": """=== AI INDUSTRY OUTREACH PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+Draft 3 email templates for industry outreach based on my research:
+1. Cold outreach email (3 sentences, specific value proposition)
+2. Follow-up email (1 week after no response)
+3. Collaboration pitch (1 paragraph, mutual benefit focus)
+Keep it professional, concise, and specific to organic electronics research.""",
+        "linkedin": """=== AI LINKEDIN POST PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+Convert this research insight into a LinkedIn post:
+- Hook: one surprising fact (first sentence)
+- Why it matters (in plain language)
+- Personal reflection (why I care about this)
+- Call to action (question for readers)
+Keep under 1300 characters. Professional but accessible tone.""",
+        "lecture": """=== AI LECTURE PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+Prepare teaching materials for a lecture. Create:
+1. Beginner-friendly explanation of the core concept
+2. Three Socratic questions to spark discussion
+3. List of common misconceptions
+4. One diagnostic quiz question with answer
+Target: undergraduate or graduate students.""",
+        "paper-review": """=== AI PAPER REVIEW PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+Review this research paper strategically:
+1. One-sentence summary
+2. What is novel about this work
+3. Biggest weakness or gap
+4. How it connects to my research on organic electronics
+5. One follow-up experiment idea
+Be critical but fair. Focus on scientific merit.""",
+        "venture": """=== AI VENTURE PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+Develop a venture hypothesis for my research:
+1. Core technical insight (one sentence)
+2. Customer pain point addressed
+3. Market hypothesis (size, segment, early adopters)
+4. Minimum viable experiment to test this
+5. Key assumptions that could kill this
+Focus on deeptech: long R&D cycles, high barriers, defensible IP.""",
+    }
+    if prompt_type in prompts: return prompts[prompt_type]
+    return f"Unknown draft type '{prompt_type}'. Available: {', '.join(DRAFT_PROMPT_TYPES)}"
+
+# --- Meeting Preparation ---
+def prepare_meeting(title, person, meeting_type, goal, desired_outcome, context=""):
+    return {"title": title, "person": person, "type": meeting_type, "goal": goal,
+            "desired_outcome": desired_outcome,
+            "what_they_likely_care_about": "Their research priorities, funding alignment, and mutual benefit.",
+            "value_proposition": "My unique expertise in organic electronics and collaborative track record.",
+            "questions_to_ask": ["What are your current research priorities?", "What collaboration models work best for you?"],
+            "points_to_communicate": ["My current research focus", "Specific collaboration idea", "Timeline and resources needed"],
+            "possible_objections": ["Timeline mismatch", "IP concerns", "Funding uncertainty"],
+            "proposed_next_step": "Schedule a follow-up within 2 weeks with a one-page concept note.",
+            "followup_draft": f"Dear {person},\\n\\nThank you for the meeting on {title}. I will send the concept note by [date].\\n\\nBest regards"}
+
+# --- Follow-up Engine ---
+def followup_review(relationships=None, opps=None, projects=None, decisions=None):
+    if relationships is None:
+        relationships_loaded = load_records(RELATIONSHIPS_PATH) if RELATIONSHIPS_PATH.exists() else []
+        relationships = [Relationship(**r) for r in relationships_loaded] if relationships_loaded else []
+    if opps is None:
+        opps_loaded = load_records(OPPORTUNITIES_PATH) if OPPORTUNITIES_PATH.exists() else []
+        opps = [Opportunity(**o) for o in opps_loaded] if opps_loaded else []
+    due = []
+    for r in relationships:
+        last = getattr(r, "last_contact_date", "")
+        if last and last < (date.today() - timedelta(days=45)).isoformat():
+            due.append({"source": "relationship", "name": getattr(r, "name", ""), "type": getattr(r, "relationship_type", ""),
+                       "last_contact": last, "days_since": (date.today() - date.fromisoformat(last)).days if last else 999})
+    for o in opps:
+        last = getattr(o, "last_touched_date", "")
+        score = opp_score(o)
+        if last and last < (date.today() - timedelta(days=14)).isoformat() and score >= 1:
+            due.append({"source": "opportunity", "name": getattr(o, "name", ""), "score": score,
+                       "last_touched": last, "days_since": (date.today() - date.fromisoformat(last)).days if last else 999})
+    due.sort(key=lambda x: -x.get("days_since", 0))
+    return {"followups": due, "total": len(due),
+            "summary": f"{len(due)} follow-up(s) due." if due else "All relationships and opportunities current."}
+
+# --- Sprint Planner ---
+def sprint_planner(okrs, projects, queue, opportunities, risks, config, relationships, energy_patterns=None):
+    active_queue = [q for q in queue if q.status in ("queued", "active")]
+    top_3 = sorted(active_queue, key=lambda q: -q.priority_score)[:3]
+    top_risks = sorted(risks, key=lambda r: risk_score(r), reverse=True)[:2]
+    stale_opps = [o for o in opportunities if getattr(o, "last_touched_date", "") and getattr(o, "last_touched_date", "") < (date.today() - timedelta(days=21)).isoformat()]
+    return {"theme": "Execute strategic priorities, protect deep work, nurture relationships.",
+            "top_outcomes": [q.title for q in top_3] if top_3 else ["Define 3 sprint outcomes"],
+            "deep_work_blocks": ["Mon 8-10am: Research deep work", "Wed 8-10am: Grant writing", "Fri 8-10am: Strategic review"],
+            "relationship_actions": ["Follow up with 2 collaborators", "Review open opportunities"],
+            "admin_containment": ["Batch admin to 3-4pm daily", "Limit email to 2 check-ins per day"],
+            "risks_to_mitigate": [getattr(r, "title", str(r)) for r in top_risks] if top_risks else ["Identify key risks"],
+            "assets_to_build": ["Grant concept note template", "Paper review checklist"],
+            "kill_defer": [f"Stale opportunity: {getattr(o, 'name', str(o))}" for o in stale_opps[:3]] if stale_opps else ["Review stale items"],
+            "daily_suggestions": ["Mon: Deep work block", "Tue: Collaboration & meetings", "Wed: Deep work block",
+                                  "Thu: Admin & follow-ups", "Fri: Review & plan next week"]}
+
+# --- Startup/Shutdown ---
+def startup_ritual(queue, projects, risks):
+    active = [q for q in queue if q.status in ("queued", "active")]
+    top = sorted(active, key=lambda q: -q.priority_score)[:1]
+    top_risk = sorted(risks, key=lambda r: risk_score(r), reverse=True)[:1] if risks else []
+    return {"top_objective": top[0].title if top else "No queued items — prioritize one task.",
+            "first_packet": execution_packet(top[0].queue_id) if top else None,
+            "risks_to_avoid": [getattr(r, "title", str(r)) for r in top_risk],
+            "one_thing_not_to_do": "Don't start the day with email or admin. Protect the first 90 minutes.",
+            "first_30_minutes": "1. Open execution packet. 2. Close email/chat. 3. Start the top task."}
+
+def shutdown_ritual():  # interactive
+    print("\n  SHUTDOWN REFLECTION"); print("-" * 50)
+    completed = input("  What was completed today? ").strip()
+    delayed = input("  What was delayed? ").strip()
+    unexpected = input("  What appeared unexpectedly? ").strip()
+    evidence = input("  What evidence was created? ").strip()
+    queued = input("  What should be queued for tomorrow? ").strip()
+    lesson = input("  What lesson should update doctrine, assumptions, or workflows? ").strip()
+    return {"date": today_str(), "completed": completed, "delayed": delayed, "unexpected": unexpected,
+            "evidence_created": evidence, "queued_for_tomorrow": queued, "lesson": lesson}
+
+# --- Asset Creation Recommender ---
+def asset_opportunities(records, projects, assets, workflows):
+    """Identify repeated work that could become reusable assets."""
+    recommendations = []
+    # Check for repeated grant writing
+    grant_workflows = [w for w in workflows if w.category == "grant_workflow"]
+    if len(grant_workflows) >= 1:
+        grant_assets = [a for a in assets if a.asset_type == "proposal_template"]
+        if not grant_assets:
+            recommendations.append("You repeatedly write grant proposals. Create a reusable proposal objective bank.")
+    # Check for repeated teaching
+    teaching_wfs = [w for w in workflows if w.category == "teaching_workflow"]
+    if len(teaching_wfs) >= 1:
+        teach_assets = [a for a in assets if a.asset_type == "lecture_material"]
+        if not teach_assets:
+            recommendations.append("You prepare lectures regularly. Create a reusable teaching module library.")
+    # Check for paper review
+    review_wfs = [w for w in workflows if "review" in w.name.lower()]
+    if len(review_wfs) >= 1:
+        review_assets = [a for a in assets if "review" in a.name.lower()]
+        if not review_assets:
+            recommendations.append("You review papers regularly. Create a structured paper-review template asset.")
+    # Check for industry outreach
+    ind_wfs = [w for w in workflows if w.category == "industry_collaboration_workflow"]
+    if len(ind_wfs) >= 1:
+        ind_assets = [a for a in assets if a.asset_type == "collaboration_pitch"]
+        if not ind_assets:
+            recommendations.append("You contact industry partners. Create a collaboration pitch template asset.")
+    return {"recommendations": recommendations, "total": len(recommendations),
+            "summary": f"{len(recommendations)} asset creation opportunity(s)." if recommendations else "No obvious asset opportunities."}
+
+# --- Knowledge Capture ---
+def load_captures():
+    data = load_records(CAPTURES_PATH)
+    return [Capture(**c) for c in data] if data else []
+
+def save_captures(cs): save_records(CAPTURES_PATH, [c.__dict__ for c in cs])
+
+def add_capture_interactive_core(capture_type, title, content, goal="", project_id="", tags=""):
+    cs = load_captures()
+    c = Capture(capture_id=uid(), date=today_str(), type=capture_type, title=title,
+                content=content, related_strategic_goal=goal,
+                linked_project_id=project_id, tags=[t.strip() for t in tags.split(",") if t.strip()])
+    cs.append(c); save_captures(cs); return c
+
+# --- Context Prompt Builder ---
+def context_prompt(query, redact=False):
+    """Search and assemble a compact context block for AI use."""
+    results = local_search(query)
+    context = f"=== CONTEXT FROM YOUR STRATEGIC SYSTEM ===\nQuery: {query}\n\n"
+    prev_store = None
+    for res in results.get("results", [])[:15]:
+        if res["store"] != prev_store:
+            context += f"\n--- {res['store']} ---\n"
+            prev_store = res["store"]
+        text = res["match"]
+        if redact: text = _redact_sensitive(text)
+        context += f"- {text}\n"
+    context += f"\n---\nTask: Use the context above to help me with: {query}\n=== END CONTEXT ==="
+    return context
+
+def _redact_sensitive(text):
+    text = re.sub(r'[\w\.-]+@[\w\.-]+\.\w+', '[EMAIL-REDACTED]', text)
+    text = re.sub(r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', '[PHONE-REDACTED]', text)
+    text = re.sub(r'\b\d{2,5}\s*\d{5,8}\s*\d{5,8}\s*\d{2,5}\b', '[ACCOUNT-REDACTED]', text)
+    return text
+
+# --- Role Dashboards ---
+def role_dashboard(role):
+    data = gather_all_data()
+    role_configs = {
+        "researcher": {"goals": ["research_publication"], "sections": ["projects", "experiments", "evidence", "assets", "workflows"]},
+        "pi": {"goals": ["grant_funding", "research_publication"], "sections": ["projects", "opportunities", "risks", "relationships", "outcomes"]},
+        "lecturer": {"goals": ["teaching_excellence"], "sections": ["projects", "assets", "workflows", "experiments"]},
+        "collaborator": {"goals": ["industry_collaboration"], "sections": ["relationships", "opportunities", "projects", "followups"]},
+        "founder": {"goals": ["deeptech_venture"], "sections": ["opportunities", "experiments", "risks", "assets", "predictions"]},
+        "public-intellectual": {"goals": ["public_influence"], "sections": ["projects", "assets", "evidence", "opportunities"]},
+    }
+    cfg = role_configs.get(role, role_configs["researcher"])
+    result = {"role": role, "strategic_goals": cfg["goals"]}
+    for section in cfg["sections"]:
+        items = data.get(section, [])
+        if section == "followups":
+            result[section] = [getattr(i, "name", str(i)) for i in items[:3]] if items else ["No pending follow-ups"]
+        else:
+            names = []
+            for i in items[:5]:
+                if isinstance(i, dict): names.append(i.get("name") or i.get("title", ""))
+                elif hasattr(i, "name"): names.append(i.name)
+                elif hasattr(i, "title"): names.append(i.title)
+                else: names.append(str(i))
+            result[section] = names if names else ["(none)"]
+    return result
+
+# --- One-Page Mode ---
+def one_page():
+    data = gather_all_data()
+    tasks = data.get("tasks", [])
+    projs = data.get("projects", [])
+    opps = data.get("opportunities", [])
+    risks = data.get("risks", [])
+    rels = data.get("relationships", [])
+    queue = load_queue()
+    active = [q for q in queue if q.status in ("queued", "active")]
+    top_q = sorted(active, key=lambda q: -q.priority_score)[:1]
+    top_risk = sorted(risks, key=lambda r: risk_score(r), reverse=True)[:1] if risks else []
+    top_opp = sorted(opps, key=lambda o: opp_score(o), reverse=True)[:1] if opps else []
+    top_rel = sorted(rels, key=lambda r: r.relationship_strength, reverse=True)[:1] if rels else []
+    stale_opps = [o for o in opps if getattr(o, "last_touched_date", "") and getattr(o, "last_touched_date", "") < (date.today() - timedelta(days=14)).isoformat()]
+    return {"today": top_q[0].title if top_q else "Prioritize one strategic task.",
+            "this_week": "Protect deep work. Follow up on opportunities. Limit admin to 25%.",
+            "this_month": "Review strategic allocation. Update OKRs. Kill stale projects.",
+            "top_project": getattr(projs[0], "name", "(none)") if projs else "(none)",
+            "top_opportunity": getattr(top_opp[0], "name", "(none)") if top_opp else "(none)",
+            "top_risk": getattr(top_risk[0], "title", "(none)") if top_risk else "(none)",
+            "top_relationship": getattr(top_rel[0], "name", "(none)") if top_rel else "(none)",
+            "one_thing_to_delete": f"Stale opportunity: {getattr(stale_opps[0], 'name', '(none)')}" if stale_opps else "Nothing obvious.",
+            "one_thing_to_protect": "Your first deep-work block each day.",
+            "next_best_move": "Start the top queued task with the execution packet."}
+
+# --- Redaction helpers ---
+import re
+
+# --- gather_all_data extension for V8 ---
+def _ext_gather_all_data(data):
+    """Extend gather_all_data with V8 stores."""
+    for path, name in [(WORKFLOWS_PATH, "workflows"), (EXECUTION_QUEUE_PATH, "queue"),
+                        (CAPTURES_PATH, "captures")]:
+        try:
+            if path.exists():
+                raw = json.loads(path.read_text())
+                data[name] = raw.get("records", raw) if isinstance(raw, dict) else raw
+        except: data[name] = []
+    data["relationships"] = load_records(RELATIONSHIPS_PATH) if RELATIONSHIPS_PATH.exists() else []
+    data["decisions"] = load_records(DECISIONS_PATH) if DECISIONS_PATH.exists() else []
+    data["experiments"] = load_records(EXPERIMENTS_PATH) if EXPERIMENTS_PATH.exists() else []
+    return data

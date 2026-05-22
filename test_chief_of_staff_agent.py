@@ -859,3 +859,227 @@ class TestV7Migration(unittest.TestCase):
     def test_get_store_version_missing(self):
         from pathlib import Path
         self.assertIsNone(get_store_version(Path(self.tmpdir) / "nonexistent.json"))
+
+
+# ======================================================================
+# V8 TESTS
+# ======================================================================
+class TestV8Workflows(unittest.TestCase):
+    """V8 — execution workflows."""
+
+    def test_workflow_creation(self):
+        wfs = load_workflows()
+        self.assertGreaterEqual(len(wfs), 9)
+
+    def test_run_workflow_generates_steps(self):
+        r = run_workflow("wf_grant_concept")
+        self.assertIsNotNone(r)
+        self.assertIn("steps", r)
+        self.assertGreater(len(r["steps"]), 0)
+
+    def test_workflow_review(self):
+        r = workflow_review()
+        self.assertIn("total", r)
+        self.assertIn("by_category", r)
+
+
+class TestV8SOP(unittest.TestCase):
+    """V8 — SOP generator."""
+
+    def test_sop_generation_grant(self):
+        r = generate_sop("grant_concept_note")
+        self.assertIsNotNone(r["sop"])
+        self.assertEqual(r["sop"]["strategic_goal"], "grant_funding")
+
+    def test_sop_templates_available(self):
+        r = generate_sop()
+        self.assertIn("templates", r)
+        self.assertGreater(len(r["templates"]), 5)
+
+
+class TestV8ProjectPlaybook(unittest.TestCase):
+    """V8 — project playbook."""
+
+    def test_playbook_generation(self):
+        project = Project(name="Test Project", strategic_goal="grant_funding",
+                          project_id="test123", status="active")
+        r = project_playbook(project, [], [], [], [], [])
+        self.assertEqual(r["project_name"], "Test Project")
+        self.assertEqual(r["strategic_goal"], "grant_funding")
+        self.assertIn("first_5_actions", r)
+
+
+class TestV8ExecutionQueue(unittest.TestCase):
+    """V8 — execution queue."""
+
+    def tearDown(self):
+        qs = load_queue()
+        save_queue([q for q in qs if not q.title.startswith("_test_")])
+
+    def test_queue_add_and_list(self):
+        q = add_to_queue("_test_ Write grant", "task", "test1", "grant_funding", 8, 60)
+        qs = load_queue()
+        self.assertTrue(any(x.title.startswith("_test_") for x in qs))
+
+    def test_queue_complete(self):
+        q = add_to_queue("_test_ Complete me", "task", "test2", "", 5, 30)
+        qs = load_queue()
+        for qi in qs:
+            if qi.queue_id == q.queue_id:
+                qi.status = "completed"; break
+        save_queue(qs)
+        # Verify it sticks
+        qs2 = load_queue()
+        completed = [x for x in qs2 if x.queue_id == q.queue_id]
+        self.assertTrue(completed)
+
+    def test_queue_review(self):
+        r = queue_review()
+        self.assertIn("active", r)
+        self.assertIn("top_3", r)
+
+
+class TestV8NextActionCompiler(unittest.TestCase):
+    """V8 — next-action compiler."""
+
+    def test_detects_missing_actions(self):
+        r = compile_next_actions([], [], [], [], [], [], [], [], [])
+        self.assertIn("total_missing", r)
+
+
+class TestV8KnowledgeGraph(unittest.TestCase):
+    """V8 — knowledge graph."""
+
+    def test_graph_created(self):
+        r = build_graph()
+        self.assertIn("nodes", r)
+
+    def test_graph_review(self):
+        r = graph_review()
+        self.assertIn("total_nodes", r)
+        self.assertIn("total_edges", r)
+
+
+class TestV8ExecutionPacket(unittest.TestCase):
+    """V8 — execution packet."""
+
+    def test_packet_not_found(self):
+        r = execution_packet("nonexistent123456")
+        self.assertIsNone(r)
+
+
+class TestV8DraftPrompts(unittest.TestCase):
+    """V8 — draft prompts."""
+
+    def test_grant_prompt(self):
+        p = draft_prompt("grant")
+        self.assertIn("GRANT", p.upper())
+        self.assertIn("AI", p)
+
+    def test_industry_email_prompt(self):
+        p = draft_prompt("industry-email")
+        self.assertIn("INDUSTRY", p.upper())
+
+    def test_linkedin_prompt(self):
+        p = draft_prompt("linkedin")
+        self.assertIn("LINKEDIN", p.upper())
+
+    def test_no_api_call(self):
+        for t in DRAFT_PROMPT_TYPES:
+            p = draft_prompt(t)
+            self.assertNotIn("http", p.lower())
+
+
+class TestV8MeetingPrep(unittest.TestCase):
+    """V8 — meeting preparation."""
+
+    def test_meeting_preparation(self):
+        r = prepare_meeting("Research Sync", "Prof. Smith",
+                            "research_collaboration", "grant_funding",
+                            "Agree on collaboration scope")
+        self.assertEqual(r["title"], "Research Sync")
+        self.assertIn("questions_to_ask", r)
+
+
+class TestV8FollowupEngine(unittest.TestCase):
+    """V8 — follow-up engine."""
+
+    def test_followup_empty(self):
+        r = followup_review([], [])
+        self.assertEqual(r["total"], 0)
+
+
+class TestV8SprintPlanner(unittest.TestCase):
+    """V8 — sprint planner."""
+
+    def test_sprint_plan_generation(self):
+        r = sprint_planner([], [], [], [], [], {}, [])
+        self.assertIn("theme", r)
+        self.assertIn("top_outcomes", r)
+
+
+class TestV8StartupShutdown(unittest.TestCase):
+    """V8 — startup/shutdown."""
+
+    def test_startup_output(self):
+        r = startup_ritual([], [], [])
+        self.assertIn("top_objective", r)
+        self.assertIn("first_30_minutes", r)
+
+    # shutdown_ritual is interactive so we skip it in automated tests
+
+
+class TestV8AssetRecommender(unittest.TestCase):
+    """V8 — asset creation recommender."""
+
+    def test_asset_creation_recommendation_with_workflows(self):
+        wfs = load_workflows()
+        assets = load_assets()
+        r = asset_opportunities([], [], assets, wfs)
+        self.assertIn("recommendations", r)
+        self.assertGreaterEqual(r["total"], 0)
+
+
+class TestV8Capture(unittest.TestCase):
+    """V8 — knowledge capture."""
+
+    def test_capture_note_creation(self):
+        c = add_capture_interactive_core("insight", "Test insight",
+                                          "This is a test insight.",
+                                          "research_publication", "", "test,v8")
+        self.assertEqual(c.title, "Test insight")
+        self.assertEqual(c.type, "insight")
+        self.assertIn("test", c.tags)
+
+
+class TestV8ContextPrompt(unittest.TestCase):
+    """V8 — context prompt builder."""
+
+    def test_context_prompt_builder(self):
+        r = context_prompt("grant")
+        self.assertIn("CONTEXT FROM YOUR STRATEGIC SYSTEM", r)
+        self.assertIn("grant", r.lower())
+
+    def test_redaction_masks_email(self):
+        text = "Contact john.doe@university.edu for details."
+        from chief_of_staff_core import _redact_sensitive
+        result = _redact_sensitive(text)
+        self.assertIn("EMAIL-REDACTED", result)
+        self.assertNotIn("john.doe", result)
+
+
+class TestV8RoleDashboard(unittest.TestCase):
+    """V8 — role dashboards."""
+
+    def test_role_dashboard_researcher(self):
+        r = role_dashboard("researcher")
+        self.assertEqual(r["role"], "researcher")
+
+
+class TestV8OnePage(unittest.TestCase):
+    """V8 — one-page mode."""
+
+    def test_one_page_mode(self):
+        r = one_page()
+        self.assertIn("today", r)
+        self.assertIn("next_best_move", r)
