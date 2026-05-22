@@ -1264,3 +1264,175 @@ class TestV9AIPerformanceReview(unittest.TestCase):
         self.assertIn("AI PERFORMANCE REVIEW", prompt)
         self.assertIn("Chief of Staff", prompt)
         self.assertNotIn("http", prompt.lower())
+
+
+# ======================================================================
+# V10 TESTS
+# ======================================================================
+class TestV10CommandQueue(unittest.TestCase):
+    def test_command_queue_creation(self):
+        cs = load_commands()
+        self.assertIsInstance(cs, list)
+
+    def test_generate_commands_from_empty(self):
+        r = generate_commands()
+        self.assertIn("total_generated", r)
+
+    def test_approve_reject_commands(self):
+        c = Command(command_id=uid(), title="Test approve", command_type="update_project")
+        cs = load_commands(); cs.append(c); save_commands(cs)
+        r = approve_command(c.command_id); self.assertIsNotNone(r)
+        r = reject_command(c.command_id); self.assertIsNotNone(r)
+        save_commands([x for x in load_commands() if x.command_id != c.command_id])
+
+
+class TestV10Approval(unittest.TestCase):
+    def test_approval_required_for_external_action(self):
+        self.assertIn("prepare_email", APPROVAL_REQUIRED_COMMANDS)
+        self.assertIn("follow_up", APPROVAL_REQUIRED_COMMANDS)
+
+
+class TestV10Policies(unittest.TestCase):
+    def test_policy_review(self):
+        r = policy_review()
+        self.assertIn("active", r)
+        self.assertGreaterEqual(r["active"], 10)
+
+
+class TestV10Conflict(unittest.TestCase):
+    def test_conflict_review_detects_capacity_conflict(self):
+        data = {"projects": [], "opportunities": [], "risks": [], "relationships": [],
+                "okrs": [], "contracts": [], "capacity": {"max_active_projects": 5}, "metrics": [], "workflows": []}
+        r = conflict_review(data)
+        self.assertIn("conflicts", r)
+
+
+class TestV10Capacity(unittest.TestCase):
+    def test_capacity_review(self):
+        r = capacity_review()
+        self.assertIn("feasible", r)
+
+
+class TestV10Initiatives(unittest.TestCase):
+    def test_initiative_creation(self):
+        i = Initiative(initiative_id=uid(), name="Test Initiative", strategic_goal="grant_funding")
+        ins = load_initiatives(); ins.append(i); save_initiatives(ins)
+        r = initiative_review()
+        self.assertIn("total", r)
+        save_initiatives([x for x in load_initiatives() if x.initiative_id != i.initiative_id])
+
+    def test_initiative_health_score(self):
+        i = Initiative(initiative_id=uid(), name="Health Test", strategic_goal="research_publication")
+        r = initiative_health_score(i, [], [], [])
+        self.assertIn("score", r)
+        self.assertIn("label", r)
+
+
+class TestV10GovernanceBoard(unittest.TestCase):
+    def test_governance_board_generation(self):
+        r = governance_board()
+        self.assertIn("strategic_position", r)
+        self.assertIn("recommended_decisions", r)
+
+
+class TestV10Packets(unittest.TestCase):
+    def test_decision_packet_no_decision(self):
+        r = decision_packet("nonexistent123")
+        self.assertIsNone(r)
+
+    def test_command_packet_no_command(self):
+        r = command_packet("nonexistent123")
+        self.assertIsNone(r)
+
+
+class TestV10PremortemPostmortem(unittest.TestCase):
+    def test_premortem_generation(self):
+        r = premortem("nonexistent123")
+        self.assertIn("failure_modes", r)
+
+    def test_postmortem_generation(self):
+        r = postmortem("nonexistent123")
+        self.assertIn("root_causes", r)
+
+
+class TestV10StrategicDebt(unittest.TestCase):
+    def test_strategic_debt_creation(self):
+        d = StrategicDebt(debt_id=uid(), title="Test Debt", debt_type="admin_debt")
+        ds = load_strategic_debt(); ds.append(d); save_strategic_debt(ds)
+        r = debt_review()
+        self.assertIn("total", r)
+        save_strategic_debt([x for x in load_strategic_debt() if x.debt_id != d.debt_id])
+
+    def test_debt_review_empty(self):
+        save_strategic_debt([])
+        r = debt_review()
+        self.assertIn("message", r)
+
+
+class TestV10ComplexityAudit(unittest.TestCase):
+    def test_complexity_audit(self):
+        r = complexity_audit()
+        self.assertIn("estimated_burden", r)
+
+
+class TestV10Simplify(unittest.TestCase):
+    def test_simplify_recommendations(self):
+        r = simplify()
+        self.assertIn("recommendations", r)
+
+
+class TestV10OSHealth(unittest.TestCase):
+    def test_os_health_score(self):
+        r = os_health()
+        self.assertIn("os_health_score", r)
+
+
+class TestV10Autonomy(unittest.TestCase):
+    def test_autonomy_level_blocks_external(self):
+        r = set_autonomy_level(2)
+        self.assertIn("label", r)
+        self.assertEqual(r["label"], "Prepare")
+        # Level 5 is disabled
+        r = set_autonomy_level(5)
+        self.assertIn("error", r)
+
+
+class TestV10IntegrationStubs(unittest.TestCase):
+    def test_noop_calendar_provider(self):
+        c = NoOpCalendarProvider()
+        r = c.create_event("test")
+        self.assertEqual(r["status"], "noop")
+
+    def test_noop_email_provider(self):
+        e = NoOpEmailProvider()
+        r = e.create_draft("test")
+        self.assertEqual(r["status"], "noop")
+
+    def test_noop_document_provider(self):
+        d = NoOpDocumentProvider()
+        r = d.create_document("test")
+        self.assertEqual(r["status"], "noop")
+
+
+class TestV10CommandExecution(unittest.TestCase):
+    def tearDown(self):
+        save_commands([])
+
+    def test_execute_rejects_unapproved(self):
+        r = execute_approved()
+        self.assertIn("executed", r)
+
+    def test_execute_approved_local_command(self):
+        c = Command(command_id=uid(), title="Test", command_type="update_metric",
+                     approval_status="approved", requires_human_approval=False)
+        save_commands([c])
+        r = execute_approved()
+        self.assertIn("executed", r)
+
+
+class TestV10AIGovernancePrompt(unittest.TestCase):
+    def test_ai_governance_review_prompt_no_api_call(self):
+        prompt = ai_governance_review_prompt()
+        self.assertIn("GOVERNANCE", prompt)
+        self.assertIn("Chief of Staff", prompt)
+        self.assertNotIn("http", prompt.lower())

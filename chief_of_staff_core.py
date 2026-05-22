@@ -87,6 +87,15 @@ CONTRACTS_PATH = Path("chief_of_staff_contracts.json")
 RUBRICS_PATH = Path("chief_of_staff_rubrics.json")
 OUTPUT_SCORES_PATH = Path("chief_of_staff_output_scores.json")
 
+# V10 store paths
+COMMAND_QUEUE_PATH = Path("chief_of_staff_command_queue.json")
+APPROVALS_PATH = Path("chief_of_staff_approvals.json")
+POLICIES_PATH = Path("chief_of_staff_policies.json")
+CAPACITY_PATH = Path("chief_of_staff_capacity.json")
+INITIATIVES_PATH = Path("chief_of_staff_initiatives.json")
+STRATEGIC_DEBT_PATH = Path("chief_of_staff_strategic_debt.json")
+AUTONOMY_PATH = Path("chief_of_staff_autonomy.json")
+
 # V8 constants
 WORKFLOW_CATEGORIES = ["research_workflow","grant_workflow","industry_collaboration_workflow","teaching_workflow","public_influence_workflow","venture_workflow","admin_workflow","reflection_workflow"]
 MEETING_TYPES = ["research_collaboration","industry_partner","grant_partner","student_supervision","teaching_meeting","venture_discussion","administrative_meeting"]
@@ -102,6 +111,37 @@ IMPACT_TYPES = ["paper_submitted","paper_accepted","grant_submitted","grant_awar
 INDICATOR_TYPES = ["leading","lagging"]
 ESTIMATE_TYPES = ["time","probability","effort","impact"]
 ADHERENCE_CHECK_ITEMS = ["operating_rhythms","contracts","doctrine","okrs","sprint_plan","startup_shutdown","followup_discipline"]
+
+# V10 constants
+COMMAND_TYPES = ["schedule_block","prepare_email","prepare_meeting","follow_up","review_decision","update_project","mitigate_risk","kill_or_pause_project","capture_evidence","update_metric","run_workflow","generate_report","rebalance_portfolio"]
+APPROVAL_REQUIRED_COMMANDS = ["prepare_email","prepare_meeting","follow_up","kill_or_pause_project"]
+APPROVAL_STATUSES = ["pending","approved","rejected","executed","cancelled"]
+DEBT_TYPES = ["admin_debt","relationship_debt","documentation_debt","technical_debt","teaching_asset_debt","grant_pipeline_debt","research_backlog_debt","decision_debt","risk_debt","energy_debt"]
+AUTONOMY_LEVELS = {0: "Record only", 1: "Recommend", 2: "Prepare", 3: "Queue for approval", 4: "Execute local reversible", 5: "External action (disabled)"}
+EXTERNAL_ACTION_TYPES = ["prepare_email","prepare_meeting","follow_up"]
+
+DEFAULT_POLICIES = [
+    {"policy_id":"p_admin_cap","title":"Admin maintenance cap","description":"If admin > 25% of time, recommend delegation.","scope":"admin_maintenance","condition":"admin_pct > 25","recommended_action":"Review admin tasks — delegate or batch.","severity":"high","active":True},
+    {"policy_id":"p_grant_protect","title":"Grant funding protection","description":"If grant funding below baseline for 2 weeks, protect grant block.","scope":"grant_funding","condition":"grant_metrics_below_baseline","recommended_action":"Block 3 x 90-minute grant writing sessions this week.","severity":"high","active":True},
+    {"policy_id":"p_relationship_followup","title":"Relationship follow-up","description":"If high-value relationship untouched 60+ days, recommend follow-up.","scope":"relationship","condition":"last_contact > 60_days","recommended_action":"Draft a warm follow-up message.","severity":"medium","active":True},
+    {"policy_id":"p_project_stale","title":"Stale project review","description":"If project has no progress for 90 days and low ROI, recommend pause/kill.","scope":"project","condition":"no_progress > 90_days AND roi < 2","recommended_action":"Review this project for pause or kill.","severity":"medium","active":True},
+    {"policy_id":"p_risk_mitigation","title":"Unmitigated high risk","description":"If risk severity >= 8 and no mitigation, recommend immediate action.","scope":"risk","condition":"severity >= 8 AND no_mitigation","recommended_action":"Assign mitigation owner and create action within 48 hours.","severity":"high","active":True},
+    {"policy_id":"p_outcome_reforecast","title":"Outcome reforecast","description":"If outcome probability < 50%, recommend reforecast.","scope":"outcome","condition":"probability < 50","recommended_action":"Reforecast or adjust the target date.","severity":"medium","active":True},
+    {"policy_id":"p_workflow_to_sop","title":"Workflow to SOP promotion","description":"If workflow used 3+ times with avg quality >= 7, recommend SOP.","scope":"workflow","condition":"runs >= 3 AND avg_quality >= 7","recommended_action":"Convert this workflow into a formal SOP.","severity":"low","active":True},
+    {"policy_id":"p_asset_strengthen","title":"Asset strengthening","description":"If asset reused 5+ times, recommend strengthening.","scope":"asset","condition":"reuse_count >= 5","recommended_action":"Polish and publish this reusable asset.","severity":"low","active":True},
+    {"policy_id":"p_estimation_correction","title":"Estimation correction","description":"If estimation error > 40%, recommend correction factor.","scope":"estimation","condition":"error_pct > 40","recommended_action":"Apply correction factor to future estimates.","severity":"medium","active":True},
+    {"policy_id":"p_portfolio_reduce","title":"Portfolio reduction","description":"If too many active projects, recommend reduction.","scope":"portfolio","condition":"active_projects > capacity","recommended_action":"Archive or kill lowest-ROI projects.","severity":"high","active":True},
+]
+
+DEFAULT_CAPACITY = {"weekly_available_hours": 40, "weekly_deep_work_hours": 15, "weekly_admin_limit": 10,
+                   "max_active_projects": 5, "max_high_focus_tasks_per_day": 3,
+                   "preferred_deep_work_days": ["Monday","Wednesday","Friday"],
+                   "energy_pattern": {"Monday": 8, "Tuesday": 7, "Wednesday": 8, "Thursday": 6, "Friday": 7, "Saturday": 4, "Sunday": 3},
+                   "protected_blocks": "Mon/Wed/Fri 8am-12pm", "recovery_blocks": "Daily 12-1pm, 6pm onwards"}
+
+DEFAULT_AUTONOMY = {"level": 2, "label": "Prepare", "max_external_actions": 0,
+                    "require_approval_for": APPROVAL_REQUIRED_COMMANDS,
+                    "allowed_local_actions": ["update_metric","capture_evidence","run_workflow","generate_report","update_project"]}
 
 DEFAULT_INDICATORS = [
     {"indicator_id":"i_research_leading_1","strategic_goal":"research_publication","indicator_type":"leading","name":"Manuscript deep-work hours","description":"Weekly hours spent on manuscript writing","current_value":0,"target_value":6,"warning_threshold":3},
@@ -452,6 +492,48 @@ class OutputScore:
     score_id:str="";date:str="";output_title:str="";output_type:str=""
     rubric_id:str="";scores_by_criterion:dict=field(default_factory=dict)
     overall_score:float=0.0;improvement_note:str=""
+
+# V10 dataclasses
+@dataclass
+class Command:
+    command_id:str="";date_created:str="";title:str="";description:str=""
+    command_type:str="";source_system:str="";strategic_goal:str=""
+    priority_score:int=5;urgency_score:int=5;risk_score:int=1
+    reversibility:str="two_way_door";requires_human_approval:bool=False
+    approval_status:str="pending";recommended_action:str=""
+    expected_benefit:str="";opportunity_cost:str=""
+    linked_project_id:str="";linked_opportunity_id:str=""
+    linked_relationship_id:str="";linked_risk_id:str=""
+    linked_outcome_id:str="";created_by:str="system";notes:str=""
+
+@dataclass
+class Approval:
+    approval_id:str="";command_id:str="";requested_at:str=""
+    approved_at:str="";approver:str="";approval_status:str="pending"
+    reason:str="";conditions:str="";expiration_date:str=""
+
+@dataclass
+class Policy:
+    policy_id:str="";title:str="";description:str="";scope:str=""
+    condition:str="";recommended_action:str="";severity:str="medium"
+    active:bool=True;created_at:str="";updated_at:str=""
+
+@dataclass
+class Initiative:
+    initiative_id:str="";name:str="";thesis:str="";strategic_goal:str=""
+    start_date:str="";target_date:str="";status:str="active"
+    linked_outcomes:list=field(default_factory=list);linked_projects:list=field(default_factory=list)
+    linked_opportunities:list=field(default_factory=list);linked_relationships:list=field(default_factory=list)
+    linked_metrics:list=field(default_factory=list);linked_risks:list=field(default_factory=list)
+    linked_assets:list=field(default_factory=list)
+    success_criteria:str="";current_phase:str="";governance_notes:str=""
+
+@dataclass
+class StrategicDebt:
+    debt_id:str="";title:str="";debt_type:str="admin_debt";description:str=""
+    severity:int=5;interest_rate:int=3;linked_project_id:str=""
+    linked_initiative_id:str="";created_date:str=""
+    next_reduction_action:str="";status:str="active"
 
 # ======================================================================
 # SCORING
@@ -2664,3 +2746,481 @@ Review the strategic performance data and answer:
 --- END DATA ---
 Be ruthlessly honest. Prioritize long-term compounding over short-term comfort.
 === END AI PERFORMANCE REVIEW PROMPT ==="""
+
+# ======================================================================
+# V10 — STRATEGIC AUTONOMY & GOVERNANCE
+# ======================================================================
+
+# --- Command Queue ---
+def load_commands():
+    data = load_records(COMMAND_QUEUE_PATH); return [Command(**c) for c in data] if data else []
+def save_commands(cs): save_records(COMMAND_QUEUE_PATH, [c.__dict__ for c in cs])
+
+def generate_commands():
+    """Generate commands from policy violations, conflicts, decay, and reviews."""
+    cmds = []
+    rels = load_records(RELATIONSHIPS_PATH) if RELATIONSHIPS_PATH.exists() else []; rels = [Relationship(**r) for r in rels] if rels else []
+    projs = load_records(PROJECTS_PATH) if PROJECTS_PATH.exists() else []; projs = [Project(**p) for p in projs] if projs else []
+    assets = load_core_records(ASSETS_PATH)
+    assumps = load_core_records(ASSUMPTIONS_PATH)
+    preds = load_core_records(PREDICTIONS_PATH)
+    risks = load_core_records(RISKS_PATH)
+    wfs = load_workflows(); okrs = load_records(OKRS_PATH) if OKRS_PATH.exists() else []; okrs = [OKR(**o) for o in okrs] if okrs else []
+    oops = load_records(OPPORTUNITIES_PATH) if OPPORTUNITIES_PATH.exists() else []; oops = [Opportunity(**o) for o in oops] if oops else []
+    decay = decay_review(rels, projs, assets, assumps, preds, risks, wfs, okrs)
+    for d in decay.get("decay_items", [])[:5]:
+        needs_approval = d["type"] == "relationship"
+        cmds.append(Command(command_id=uid(), date_created=today_str(),
+            title=f"Address decay: {d['name'][:50]}", description=d["issue"],
+            command_type="follow_up" if d["type"]=="relationship" else "update_project",
+            source_system="decay_review", priority_score=7, requires_human_approval=needs_approval,
+            approval_status="pending" if needs_approval else "approved"))
+    conflicts = conflict_review(get_data_for_conflict())
+    for c in conflicts.get("conflicts", [])[:5]:
+        cmds.append(Command(command_id=uid(), date_created=today_str(),
+            title=f"Resolve conflict: {c['type'][:50]}", description=c.get("resolution", ""),
+            command_type="rebalance_portfolio", source_system="conflict_review",
+            priority_score=8, requires_human_approval=False))
+    fups = followup_review(rels, oops)
+    for f in fups.get("followups", [])[:3]:
+        cmds.append(Command(command_id=uid(), date_created=today_str(),
+            title=f"Follow up: {f['name'][:50]}", description=f"{f.get('days_since','?')} days since last contact",
+            command_type="follow_up", source_system="followup_review",
+            priority_score=6, requires_human_approval=True))
+    existing = load_commands()
+    existing_ids = {c.command_id for c in existing}
+    new = [c for c in cmds if c.command_id not in existing_ids]
+    existing.extend(new); save_commands(existing)
+    return {"total_generated": len(new), "commands": [{"id": c.command_id, "title": c.title[:50]} for c in new],
+            "summary": f"Generated {len(new)} command(s)." if new else "No new commands needed."}
+
+def load_core_records(path):
+    """Load raw records from path as dicts, returning empty list on any failure."""
+    if not path.exists(): return []
+    try:
+        data = json.loads(path.read_text())
+        return data.get("records", data) if isinstance(data, dict) else data
+    except: return []
+
+def load_projects_from_core():
+    return [Project(**p) for p in (load_records(PROJECTS_PATH) or [])] if PROJECTS_PATH.exists() else []
+
+def load_risks_from_core():
+    return [Risk(**r) for r in (load_records(RISKS_PATH) or [])] if RISKS_PATH.exists() else []
+
+def load_decisions_from_core():
+    return [Decision(**d) for d in (load_records(DECISIONS_PATH) or [])] if DECISIONS_PATH.exists() else []
+
+def load_rels_from_core():
+    return [Relationship(**r) for r in (load_records(RELATIONSHIPS_PATH) or [])] if RELATIONSHIPS_PATH.exists() else []
+
+def load_evidence_from_core():
+    return [Evidence(**e) for e in (load_records(EVIDENCE_PATH) or [])] if EVIDENCE_PATH.exists() else []
+
+def load_opps_from_core():
+    return [Opportunity(**o) for o in (load_records(OPPORTUNITIES_PATH) or [])] if OPPORTUNITIES_PATH.exists() else []
+
+def load_assets_from_core():
+    return [StrategicAsset(**a) for a in (load_records(ASSETS_PATH) or [])] if ASSETS_PATH.exists() else []
+
+def load_assums_from_core():
+    return [Assumption(**a) for a in (load_records(ASSUMPTIONS_PATH) or [])] if ASSUMPTIONS_PATH.exists() else []
+
+def load_preds_from_core():
+    return [Prediction(**p) for p in (load_records(PREDICTIONS_PATH) or [])] if PREDICTIONS_PATH.exists() else []
+def load_doctrine_from_core():
+    return load_records(DOCTRINE_PATH) if DOCTRINE_PATH.exists() else []
+    """Load raw records from path as dicts, returning empty list on any failure."""
+    if not path.exists(): return []
+    try:
+        data = json.loads(path.read_text())
+        return data.get("records", data) if isinstance(data, dict) else data
+    except: return []
+
+def command_review():
+    cs = load_commands()
+    if not cs: return {"total": 0, "message": "No commands. Use --generate-commands."}
+    pending = [c for c in cs if c.approval_status == "pending"]
+    approved = [c for c in cs if c.approval_status == "approved" and not c.title.startswith("Address decay: Follow up: Resolve conflict: ".split()[0])]
+    return {"total": len(cs), "pending_approval": len(pending), "approved_ready": len([c for c in cs if c.approval_status == "approved"]),
+            "top_pending": [{"id": c.command_id, "title": c.title[:60], "type": c.command_type, "needs_approval": c.requires_human_approval} for c in pending[:5]],
+            "summary": f"{len(pending)} pending approval, {len(approved)} approved."}
+
+def get_data_for_conflict():
+    return {"projects": load_records(PROJECTS_PATH) if PROJECTS_PATH.exists() else [],
+            "opportunities": load_records(OPPORTUNITIES_PATH) if OPPORTUNITIES_PATH.exists() else [],
+            "risks": load_records(RISKS_PATH) if RISKS_PATH.exists() else [],
+            "relationships": load_records(RELATIONSHIPS_PATH) if RELATIONSHIPS_PATH.exists() else [],
+            "okrs": load_records(OKRS_PATH) if OKRS_PATH.exists() else [],
+            "contracts": load_records(CONTRACTS_PATH) if CONTRACTS_PATH.exists() else [],
+            "capacity": load_capacity(), "metrics": load_metrics(), "workflows": load_records(WORKFLOWS_PATH) if WORKFLOWS_PATH.exists() else []}
+
+# --- Human Approval ---
+def load_approvals():
+    data = load_records(APPROVALS_PATH); return [Approval(**a) for a in data] if data else []
+def save_approvals(aps): save_records(APPROVALS_PATH, [a.__dict__ for a in aps])
+
+def approve_command(command_id, reason=""):
+    cs = load_commands(); aps = load_approvals()
+    for c in cs:
+        if c.command_id == command_id:
+            c.approval_status = "approved"
+            aps.append(Approval(approval_id=uid(), command_id=command_id, requested_at=c.date_created,
+                                approved_at=today_str(), approver="user", approval_status="approved", reason=reason))
+            save_commands(cs); save_approvals(aps); return c
+    return None
+
+def reject_command(command_id, reason=""):
+    cs = load_commands(); aps = load_approvals()
+    for c in cs:
+        if c.command_id == command_id:
+            c.approval_status = "rejected"
+            aps.append(Approval(approval_id=uid(), command_id=command_id, requested_at=c.date_created,
+                                approved_at=today_str(), approver="user", approval_status="rejected", reason=reason))
+            save_commands(cs); save_approvals(aps); return c
+    return None
+
+# --- Policies ---
+def load_policies():
+    data = load_records(POLICIES_PATH)
+    if not data: return [Policy(**p, created_at=today_str()) for p in DEFAULT_POLICIES]
+    return [Policy(**p) for p in data]
+def save_policies(ps): save_records(POLICIES_PATH, [p.__dict__ for p in ps])
+
+def policy_review():
+    ps = load_policies(); active = [p for p in ps if p.active]
+    return {"total": len(ps), "active": len(active),
+            "by_severity": {"high": len([p for p in active if p.severity=="high"]),
+                          "medium": len([p for p in active if p.severity=="medium"]),
+                          "low": len([p for p in active if p.severity=="low"])},
+            "summary": f"{len(active)} active policies."}
+
+# --- Conflict Detection ---
+def conflict_review(data):
+    conflicts = []
+    cap = data.get("capacity", {})
+    projs = data.get("projects", []); active_projs = [p for p in projs if getattr(p, "status", "active")=="active"]
+    max_projs = cap.get("max_active_projects", 5) if isinstance(cap, dict) else 5
+    if len(active_projs) > max_projs:
+        conflicts.append({"type": "project_capacity", "severity": "high",
+                         "description": f"{len(active_projs)} active projects exceeds capacity ({max_projs}).",
+                         "resolution": "Pause or merge lowest-ROI projects."})
+    okrs = data.get("okrs", [])
+    active_okrs = [o for o in okrs if getattr(o, "status", "active")=="active"]
+    grant_okrs = [o for o in active_okrs if getattr(o, "strategic_goal","")=="grant_funding"]
+    research_okrs = [o for o in active_okrs if getattr(o, "strategic_goal","")=="research_publication"]
+    if len(grant_okrs) >= 2 and len(research_okrs) >= 2:
+        conflicts.append({"type": "okr_competition", "severity": "medium",
+                         "description": "Multiple grant and research OKRs compete for deep-work hours.",
+                         "resolution": "Prioritize one per quarter; defer others."})
+    contracts = data.get("contracts", [])
+    active_contracts = [c for c in contracts if getattr(c, "status", "")=="active"]
+    if active_contracts and len(active_okrs) == 0:
+        conflicts.append({"type": "contract_no_okr", "severity": "low",
+                         "description": "Active contracts exist but no OKRs to track them.",
+                         "resolution": "Create an OKR linked to the contract."})
+    return {"conflicts": conflicts, "total": len(conflicts),
+            "summary": f"{len(conflicts)} conflict(s) detected." if conflicts else "No strategic conflicts detected."}
+
+# --- Capacity ---
+def load_capacity():
+    data = load_json(CAPACITY_PATH, DEFAULT_CAPACITY)
+    return data if isinstance(data, dict) else DEFAULT_CAPACITY
+def save_capacity(c): save_json(CAPACITY_PATH, c, is_records=False)
+
+def capacity_review(cap=None):
+    cap = cap or load_capacity()
+    projs = load_projects_from_core(); active = [p for p in projs if getattr(p, "status", "active")=="active"]
+    max_projs = cap.get("max_active_projects", 5)
+    feasible = len(active) <= max_projs
+    return {"capacity": cap, "active_projects": len(active), "max_projects": max_projs,
+            "feasible": feasible,
+            "deep_work_conservative": cap.get("weekly_deep_work_hours", 15) >= 12,
+            "summary": f"{len(active)}/{max_projs} projects active — {'feasible' if feasible else 'over-capacity'}."}
+
+# --- Initiatives ---
+def load_initiatives():
+    data = load_records(INITIATIVES_PATH); return [Initiative(**i) for i in data] if data else []
+def save_initiatives(ins): save_records(INITIATIVES_PATH, [i.__dict__ for i in ins])
+
+def initiative_health_score(initiative, projs, metrics, risks):
+    active_projs = [p for p in projs if getattr(p, "project_id", "") in initiative.linked_projects]
+    progress = len([p for p in active_projs if getattr(p, "status","")=="active"]) / max(len(active_projs), 1) * 50
+    linked_metrics = [m for m in metrics if m.metric_id in initiative.linked_metrics]
+    metric_pct = sum(m.current_value / max(m.target_value, 0.01) for m in linked_metrics) / max(len(linked_metrics), 1) * 25
+    risk_free = 15 if not any(getattr(r, "severity", 5) >= 7 for r in risks if getattr(r, "project_id","") in initiative.linked_projects) else 5
+    score = progress + min(metric_pct, 25) + risk_free
+    if score >= 70: label = "healthy"
+    elif score >= 50: label = "watch"
+    elif score >= 30: label = "at_risk"
+    elif score >= 10: label = "critical"
+    else: label = "stale"
+    return {"score": round(score, 1), "label": label, "progress": round(progress, 1),
+            "metric_component": round(metric_pct, 1), "risk_component": risk_free}
+
+def initiative_review():
+    ins = load_initiatives(); projs_all = load_projects_from_core(); ms = load_metrics(); rs = load_risks_from_core()
+    if not ins: return {"total": 0, "message": "No initiatives. Use --add-initiative."}
+    results = []
+    for i in ins:
+        hs = initiative_health_score(i, projs_all, ms, rs)
+        results.append({"name": i.name, "goal": i.strategic_goal, "status": i.status,
+                       "health": hs["label"], "health_score": hs["score"],
+                       "phase": i.current_phase or "planning"})
+    return {"total": len(ins), "initiatives": results,
+            "summary": f"{len([r for r in results if r['health']=='healthy'])} healthy, "
+                       f"{len([r for r in results if r['health']=='at_risk'])} at risk."}
+
+# --- Governance Board ---
+def governance_board():
+    data = get_data_for_conflict()
+    ins = initiative_review(); cmd_r = command_review(); pol_r = policy_review()
+    conflicts = conflict_review(data); cap_r = capacity_review(data.get("capacity"))
+    rels = [Relationship(**r) for r in (load_records(RELATIONSHIPS_PATH) or [])] if RELATIONSHIPS_PATH.exists() else []
+    projs = [Project(**p) for p in (load_records(PROJECTS_PATH) or [])] if PROJECTS_PATH.exists() else []
+    decay = decay_review(rels, projs, load_core_records(ASSETS_PATH),
+                         load_core_records(ASSUMPTIONS_PATH), load_core_records(PREDICTIONS_PATH),
+                         load_core_records(RISKS_PATH), load_workflows(), [OKR(**o) for o in (load_records(OKRS_PATH) or [])] if OKRS_PATH.exists() else [])
+    return {"strategic_position": "Advance research, secure grants, build collaborations, govern carefully.",
+            "initiatives": ins, "command_queue": cmd_r, "policies": pol_r,
+            "conflicts": conflicts, "capacity": cap_r, "decay": decay.get("summary",""),
+            "recommended_decisions": ["Approve pending safe commands",
+                                      "Resolve conflicts" if conflicts.get("total",0) > 0 else "No conflicts",
+                                      "Pay down strategic debt" if decay.get("total",0) > 0 else "No decay detected"]}
+
+# --- Decision & Command Packets ---
+def decision_packet(decision_id):
+    decs = load_decisions_from_core()
+    d = next((d for d in decs if d.decision_id == decision_id), None)
+    if not d: return None
+    return {"decision": d.title, "context": d.context or "No context recorded.",
+            "options": d.options or "No options documented.",
+            "evidence": d.evidence or "No evidence noted.",
+            "decision_date": d.decision_date, "review_date": d.review_date,
+            "actual_outcome": d.actual_outcome or "Pending"}
+
+def command_packet(command_id):
+    cs = load_commands()
+    c = next((c for c in cs if c.command_id == command_id), None)
+    if not c: return None
+    return {"title": c.title, "type": c.command_type, "description": c.description,
+            "action": c.recommended_action or c.description,
+            "priority": c.priority_score, "urgency": c.urgency_score,
+            "risk": c.risk_score, "needs_approval": c.requires_human_approval,
+            "status": c.approval_status, "benefit": c.expected_benefit or "Strategic improvement.",
+            "cost": c.opportunity_cost or "Minimal — local action."}
+
+# --- Pre-mortem / Post-mortem ---
+def premortem(project_id):
+    projs = load_projects_from_core(); p = next((p for p in projs if p.project_id == project_id), None)
+    name = p.name if p else project_id
+    return {"entity": name, "type": "project",
+            "failure_modes": ["Loss of key collaborator", "Funding gap", "Scope creep", "Competing priorities", "Technical dead end"],
+            "early_warnings": ["Milestone delays > 30 days", "Weekly deep work < 2 hours", "Collaborator disengagement"],
+            "prevention": ["Protect 2 deep-work blocks/week", "Weekly collaborator check-in", "30-day milestone review"],
+            "contingency": "If delayed > 60 days, reduce scope or merge with adjacent project.",
+            "owner": "Project lead"}
+
+def postmortem(project_id):
+    projs = load_projects_from_core(); p = next((p for p in projs if p.project_id == project_id), None)
+    name = p.name if p else project_id
+    return {"entity": name, "expected_vs_actual": "Expected: complete by target. Actual: review status.",
+            "root_causes": ["Insufficient protected time", "Underestimated complexity", "Weak follow-up"],
+            "avoidable_mistakes": ["No weekly review cadence", "Scope not constrained early"],
+            "useful_surprises": ["List any unexpected positives."],
+            "lessons": ["Protect deep work ruthlessly.", "Review scope at milestone 1.", "Log evidence weekly."],
+            "doctrine_updates": ["Deep work is non-negotiable.", "Scope must be constrained at milestone 1."],
+            "system_improvements": ["Add milestone-based project health check", "Auto-flag projects without weekly progress"]}
+
+# --- Strategic Debt ---
+def load_strategic_debt():
+    data = load_records(STRATEGIC_DEBT_PATH); return [StrategicDebt(**d) for d in data] if data else []
+def save_strategic_debt(ds): save_records(STRATEGIC_DEBT_PATH, [d.__dict__ for d in ds])
+
+def debt_review():
+    ds = load_strategic_debt()
+    if not ds: return {"total": 0, "message": "No strategic debt recorded. Use --add-debt."}
+    high_interest = sorted(ds, key=lambda d: -d.interest_rate)[:5]
+    return {"total": len(ds), "by_type": {t: len([d for d in ds if d.debt_type==t]) for t in set(d.debt_type for d in ds)},
+            "highest_interest": [{"title": d.title[:50], "type": d.debt_type, "interest": d.interest_rate} for d in high_interest],
+            "summary": f"{len(ds)} debt items; highest interest: {high_interest[0].debt_type if high_interest else 'none'}."}
+
+# --- Complexity Audit ---
+def complexity_audit():
+    active_projs = len([p for p in load_projects_from_core() if getattr(p, "status", "active")=="active"])
+    active_opps = len([o for o in load_opps_from_core() if getattr(o, "status", "active")=="active"])
+    active_wfs = len([w for w in load_workflows() if getattr(w, "status", "active")=="active"])
+    unresolved_risks = len([r for r in load_risks_from_core() if not getattr(r, "mitigation_owner", "")])
+    pending_cmds = len([c for c in load_commands() if c.approval_status=="pending"])
+    stale_records = 0
+    for path in [OPPORTUNITIES_PATH, PROJECTS_PATH, RISKS_PATH]:
+        if path.exists():
+            try:
+                data = json.loads(path.read_text()); recs = data.get("records", data) if isinstance(data, dict) else data
+                stale_records += sum(1 for r in recs if isinstance(r, dict) and r.get("last_touched_date", r.get("last_updated", "")) < (date.today() - timedelta(days=60)).isoformat())
+            except: pass
+    wf_runs = load_workflow_runs(); wrs_count = len(wf_runs)
+    est_burden = active_projs * 2 + active_opps * 0.5 + active_wfs * 1 + pending_cmds * 0.3
+    warning = est_burden > 15
+    return {"active_projects": active_projs, "active_opportunities": active_opps, "active_workflows": active_wfs,
+            "unresolved_risks": unresolved_risks, "pending_commands": pending_cmds,
+            "stale_records": stale_records, "workflow_runs": wrs_count,
+            "estimated_burden": round(est_burden, 1), "warning": warning,
+            "summary": f"Complexity burden: {est_burden:.1f}. {'WARNING: exceeds safe threshold.' if warning else 'Manageable.'}"}
+
+# --- Simplification Engine ---
+def simplify():
+    recommendations = []
+    rels = [Relationship(**r) for r in (load_records(RELATIONSHIPS_PATH) or [])] if RELATIONSHIPS_PATH.exists() else []
+    projs = [Project(**p) for p in (load_records(PROJECTS_PATH) or [])] if PROJECTS_PATH.exists() else []
+    assets = load_core_records(ASSETS_PATH)
+    decay = decay_review(rels, projs, assets,
+                         load_core_records(ASSUMPTIONS_PATH), load_core_records(PREDICTIONS_PATH),
+                         load_core_records(RISKS_PATH), load_workflows(),
+                         [OKR(**o) for o in (load_records(OKRS_PATH) or [])] if OKRS_PATH.exists() else [])
+    for d in decay.get("decay_items", []):
+        if d["type"] == "project":
+            recommendations.append(f"Pause or kill stale project: {d['name']}")
+        elif d["type"] == "asset":
+            recommendations.append(f"Archive unused asset: {d['name']}")
+    opps = [Opportunity(**o) for o in (load_records(OPPORTUNITIES_PATH) or [])] if OPPORTUNITIES_PATH.exists() else []
+    for o in opps:
+        if getattr(o, "last_touched_date", "") and getattr(o, "last_touched_date", "") < (date.today() - timedelta(days=90)).isoformat():
+            recommendations.append(f"Close stale opportunity: {getattr(o, 'name', str(o))}")
+    wfs = load_workflows()
+    if len(wfs) > 12: recommendations.append("Archive unused workflows — more than 12 active.")
+    rois = roi_review(projs, wfs, rels, opps, assets, load_metrics())
+    for item in rois.get("low_roi", [])[:3]:
+        recommendations.append(f"Consider pausing low-ROI {item['type']}: {item['name']}")
+    return {"recommendations": list(set(recommendations))[:10], "total": len(set(recommendations)),
+            "summary": f"{len(set(recommendations))} simplification recommendation(s)."}
+
+# --- OS Health Score ---
+def os_health():
+    score = 0
+    # Data freshness (15 pts)
+    ms = load_metrics(); recently_updated = sum(1 for m in ms if m.last_updated and m.last_updated >= (date.today() - timedelta(days=30)).isoformat())
+    score += min(15, recently_updated * 3)
+    # Review adherence (15 pts)
+    adh = adherence_review(load_rhythms(), load_contracts(), load_doctrine_from_core(), load_okrs(), load_recent_history(14))
+    score += adh["adherence_score"] / 100 * 15
+    # Command queue clarity (10 pts)
+    cs = load_commands(); pending_old = sum(1 for c in cs if c.approval_status=="pending" and c.date_created < (date.today() - timedelta(days=14)).isoformat())
+    score += 10 - min(10, pending_old * 2)
+    # Measurement quality (10 pts)
+    score += min(10, len(ms) * 2)
+    # Evidence quality (10 pts)
+    ev = load_evidence_from_core(); score += min(10, len(ev) * 2)
+    # Capacity realism (10 pts)
+    cap_r = capacity_review(); score += 10 if cap_r["feasible"] else 3
+    # Follow-up discipline (10 pts)
+    fups = followup_review(load_rels_from_core(), load_opps_from_core()); score += 10 - min(10, fups.get("total", 0) * 1.5)
+    # Decision review (10 pts)
+    decs = load_decisions_from_core(); reviewed = sum(1 for d in decs if getattr(d, "actual_outcome", ""))
+    score += min(10, reviewed * 3)
+    # Complexity control (10 pts)
+    ca = complexity_audit(); score += 10 if not ca["warning"] else 3
+    score = round(min(100, max(0, score)), 1)
+    return {"os_health_score": score, "status": "healthy" if score >= 70 else "needs_attention" if score >= 50 else "critical",
+            "strengths": [k for k, v in {"data_freshness": recently_updated > 2, "low_complexity": not ca["warning"]}.items() if v],
+            "weaknesses": [k for k, v in {"stale_commands": pending_old > 2, "over_capacity": not cap_r["feasible"], "poor_followup": fups.get("total", 0) > 3}.items() if v],
+            "summary": f"OS Health: {score}/100 ({'healthy' if score >= 70 else 'needs_attention' if score >= 50 else 'critical'})."}
+
+# --- Autonomy ---
+def load_autonomy():
+    data = load_json(AUTONOMY_PATH, DEFAULT_AUTONOMY)
+    return data if isinstance(data, dict) else DEFAULT_AUTONOMY
+def save_autonomy(a): save_json(AUTONOMY_PATH, a, is_records=False)
+
+def set_autonomy_level(level):
+    try: lv = int(level)
+    except: return {"error": f"Invalid level: {level}. Use 0-4."}
+    if lv > 4: return {"error": "Level 5 (external actions) is disabled in V10."}
+    a = load_autonomy(); a["level"] = lv; a["label"] = AUTONOMY_LEVELS[lv]
+    if lv <= 1: a["allowed_local_actions"] = []
+    elif lv == 2: a["allowed_local_actions"] = ["update_metric","capture_evidence"]
+    elif lv >= 4: a["allowed_local_actions"] = ["update_metric","capture_evidence","run_workflow","generate_report","update_project"]
+    save_autonomy(a); return a
+
+# --- Integration Stubs ---
+class CalendarProvider:
+    def create_event(self, *args, **kwargs): raise NotImplementedError
+class EmailProvider:
+    def create_draft(self, *args, **kwargs): raise NotImplementedError
+class DocumentProvider:
+    def create_document(self, *args, **kwargs): raise NotImplementedError
+
+class NoOpCalendarProvider(CalendarProvider):
+    def create_event(self, *args, **kwargs): return {"status": "noop", "message": "Calendar integration disabled."}
+class NoOpEmailProvider(EmailProvider):
+    def create_draft(self, *args, **kwargs): return {"status": "noop", "message": "Email integration disabled."}
+class NoOpDocumentProvider(DocumentProvider):
+    def create_document(self, *args, **kwargs): return {"status": "noop", "message": "Document integration disabled."}
+
+# --- Local Command Execution ---
+def execute_approved():
+    cs = load_commands(); autonomy = load_autonomy()
+    approved = [c for c in cs if c.approval_status == "approved"]
+    executed = []; rejected = []
+    for c in approved:
+        if c.requires_human_approval and c.approval_status != "approved":
+            rejected.append(c); continue
+        if c.command_type in EXTERNAL_ACTION_TYPES and autonomy["level"] < 5:
+            rejected.append(c); continue
+        if c.command_type not in autonomy.get("allowed_local_actions", []) and autonomy["level"] < 3:
+            rejected.append(c); continue
+        # Execute safe local actions
+        if c.command_type == "update_metric":
+            ms = load_metrics()
+            if c.linked_outcome_id:
+                for m in ms:
+                    if m.metric_id == c.linked_outcome_id: m.current_value += 1; m.last_updated = today_str()
+                save_metrics(ms)
+        elif c.command_type == "capture_evidence":
+            ev = load_evidence_from_core(); ev_id = uid()
+            ev.append(Evidence(evidence_id=ev_id, title=c.title[:50], description=c.description, source="command_execution"))
+            save_evidence(ev)
+        elif c.command_type == "update_project":
+            pass  # Safe local update — no destructive action
+        c.approval_status = "executed"; executed.append(c)
+        _audit_log("execute_command", c.command_id, "approved", "executed")
+    save_commands(cs)
+    return {"executed": len(executed), "rejected": len(rejected),
+            "summary": f"Executed {len(executed)}, rejected {len(rejected)}."}
+
+def _audit_log(action, entity_id, old_state, new_state):
+    """Simple audit trail for command execution."""
+    audit_path = Path("chief_of_staff_audit_log.json")
+    entries = json.loads(audit_path.read_text()).get("records", []) if audit_path.exists() else []
+    entries.append({"timestamp": datetime.now().isoformat(), "action": action, "entity_id": entity_id,
+                    "old_state": old_state, "new_state": new_state})
+    save_json(audit_path, {"records": entries, "schema_version": "10.0"}, is_records=False)
+
+# --- AI Governance Prompt ---
+def ai_governance_review_prompt():
+    gb = governance_board(); ca = complexity_audit(); oh = os_health()
+    return f"""=== AI GOVERNANCE REVIEW PROMPT ===
+(COPY INTO YOUR AI ASSISTANT)
+
+You are a governance board reviewing a strategic operating system.
+Roles: Governance Chief of Staff, Skeptical Board Member, Risk Officer, Execution Realist, Strategic Simplifier, Founder/PI Mentor.
+
+Context:
+- Initiatives: {gb['initiatives'].get('total', 0) if isinstance(gb.get('initiatives'), dict) else '?'} active
+- Pending commands: {gb['command_queue'].get('pending_approval', 0) if isinstance(gb.get('command_queue'), dict) else '?'}
+- Conflicts: {gb['conflicts'].get('total', 0) if isinstance(gb.get('conflicts'), dict) else '?'}
+- OS Health: {oh['os_health_score']}/100
+- Complexity: {'Warning' if ca.get('warning') else 'Manageable'}
+
+Answer:
+1. What should be approved?
+2. What should be rejected?
+3. What should be paused?
+4. What should be killed?
+5. What is overcomplicated?
+6. What decision is being avoided?
+7. What strategic debt matters most?
+8. What 7-day correction is recommended?
+
+Be governance-focused: prioritize safety, sustainability, and long-term compounding.
+=== END AI GOVERNANCE REVIEW PROMPT ==="""

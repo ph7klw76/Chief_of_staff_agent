@@ -1358,6 +1358,236 @@ def ai_performance_review_cmd():
     print(ai_performance_review_prompt())
 
 # ======================================================================
+# V10 — STRATEGIC AUTONOMY & GOVERNANCE
+# ======================================================================
+def commands_cmd():
+    cs=load_commands()
+    if not cs:print("  No commands. Use --generate-commands.");return
+    print(f"\n  STRATEGIC COMMAND QUEUE ({len(cs)})");print(SEP)
+    for c in cs:
+        flag="⚠A" if c.requires_human_approval else "  "
+        print(f"  {flag} {c.command_id}  [{c.approval_status}] {c.title[:55]}  {c.command_type}")
+    print(SEP)
+
+def generate_commands_cmd():
+    r=generate_commands()
+    print(f"\n  GENERATE COMMANDS");print(SEP);print(f"  {r['summary']}")
+    for c in r["commands"]:print(f"    {c['id']}  {c['title']}")
+    print(SEP)
+
+def approve_command_cmd(command_id):
+    r=approve_command(command_id)
+    if r:print(f"  Command '{r.title[:50]}' approved.")
+    else:print(f"  Command '{command_id}' not found.")
+
+def reject_command_cmd(command_id):
+    r=reject_command(command_id)
+    if r:print(f"  Command '{r.title[:50]}' rejected.")
+    else:print(f"  Command '{command_id}' not found.")
+
+def command_review_cmd():
+    r=command_review()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  COMMAND REVIEW");print(SEP);print(f"  {r['summary']}")
+    if r["top_pending"]:
+        print(f"\n  PENDING APPROVAL:")
+        for c in r["top_pending"]:print(f"    {c['id']}  [{c['type']}] {c['title']} {'⚠needs approval' if c['needs_approval'] else ''}")
+    print(SEP)
+
+def approvals_cmd():
+    aps=load_approvals()
+    if not aps:print("  No approvals recorded.");return
+    print(f"\n  APPROVAL RECORDS ({len(aps)})");print(SEP)
+    for a in aps:print(f"  {a.approval_id}  cmd:{a.command_id[:8]}  [{a.approval_status}]  {a.approved_at}")
+    print(SEP)
+
+def policies_cmd():
+    ps=load_policies()
+    print(f"\n  STRATEGIC POLICIES ({len(ps)})");print(SEP)
+    for p in ps:
+        tag="✓" if p.active else "✗"
+        print(f"  {tag} {p.policy_id}  [{p.severity}] {p.title} ({p.scope})")
+    print(SEP)
+
+def add_policy_cmd():
+    print("\n  ADD POLICY");print("-"*40)
+    p=Policy(policy_id=uid(),title=input("  Title: ").strip(),description=input("  Description: ").strip(),scope=input("  Scope: ").strip(),condition=input("  Condition: ").strip(),recommended_action=input("  Recommended action: ").strip(),severity=input("  Severity (low/medium/high): ").strip()or"medium",created_at=today_str())
+    ps=load_policies();ps.append(p);save_policies(ps);print(f"  Policy '{p.title}' added.")
+
+def policy_review_cmd():
+    r=policy_review()
+    print(f"\n  POLICY REVIEW");print(SEP);print(f"  {r['summary']}")
+    print(f"  High: {r['by_severity']['high']}  Medium: {r['by_severity']['medium']}  Low: {r['by_severity']['low']}")
+    print(SEP)
+
+def conflict_review_cmd():
+    data=get_data_for_conflict()
+    r=conflict_review(data)
+    print(f"\n  CONFLICT REVIEW");print(SEP);print(f"  {r['summary']}")
+    for c in r["conflicts"]:print(f"\n  [{c['severity'].upper()}] {c['description']}\n    Resolution: {c['resolution']}")
+    print(SEP)
+
+def capacity_cmd():
+    cap=load_capacity();r=capacity_review(cap)
+    print(f"\n  STRATEGIC CAPACITY");print(SEP)
+    for k,v in cap.items():print(f"  {k}: {v}")
+    print(f"\n  {r['summary']}")
+    print(SEP)
+
+def update_capacity_cmd():
+    print("\n  UPDATE CAPACITY");print("-"*40)
+    cap=load_capacity()
+    try:cap["weekly_available_hours"]=int(input(f"  Available hours/week [{cap.get('weekly_available_hours',40)}]: ").strip()or cap.get("weekly_available_hours",40))
+    except:pass
+    try:cap["weekly_deep_work_hours"]=int(input(f"  Deep work hours/week [{cap.get('weekly_deep_work_hours',15)}]: ").strip()or cap.get("weekly_deep_work_hours",15))
+    except:pass
+    try:cap["max_active_projects"]=int(input(f"  Max active projects [{cap.get('max_active_projects',5)}]: ").strip()or cap.get("max_active_projects",5))
+    except:pass
+    save_capacity(cap);print("  Capacity updated.")
+
+def capacity_review_cmd():
+    r=capacity_review()
+    print(f"\n  CAPACITY REVIEW");print(SEP);print(f"  {r['summary']}")
+    print(f"  Deep work: {r['capacity'].get('weekly_deep_work_hours',0)}h/week")
+    print(SEP)
+
+def initiatives_cmd():
+    ins=load_initiatives()
+    if not ins:print("  No initiatives. Use --add-initiative.");return
+    print(f"\n  STRATEGIC INITIATIVES ({len(ins)})");print(SEP)
+    for i in ins:print(f"  {i.initiative_id}  {i.name[:45]}  goal:{i.strategic_goal}  status:{i.status}")
+    print(SEP)
+
+def add_initiative_cmd():
+    print("\n  ADD INITIATIVE");print("-"*40)
+    i=Initiative(initiative_id=uid(),name=input("  Name: ").strip(),thesis=input("  Thesis: ").strip(),strategic_goal=input("  Strategic goal: ").strip(),start_date=today_str(),target_date=input("  Target date (YYYY-MM-DD): ").strip(),status="active",success_criteria=input("  Success criteria: ").strip(),current_phase=input("  Current phase: ").strip())
+    ins=load_initiatives();ins.append(i);save_initiatives(ins);print(f"  Initiative '{i.name}' created.")
+
+def initiative_review_cmd():
+    r=initiative_review()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  INITIATIVE REVIEW");print(SEP);print(f"  {r['summary']}")
+    for i in r["initiatives"]:print(f"    {i['name'][:45]}  [{i['health']}]  score:{i['health_score']}  phase:{i['phase']}")
+    print(SEP)
+
+def governance_board_cmd():
+    r=governance_board()
+    print(f"\n  GOVERNANCE BOARD — {today_str()}");print(SEP)
+    print(f"  POSITION: {r['strategic_position']}")
+    print(f"  INITIATIVES: {r['initiatives'].get('summary', 'none')}")
+    print(f"  COMMANDS: {r['command_queue'].get('summary', 'none')}")
+    print(f"  POLICIES: {r['policies'].get('summary', 'none')}")
+    print(f"  CONFLICTS: {r['conflicts'].get('summary', 'none')}")
+    print(f"  CAPACITY: {r['capacity'].get('summary', 'none')}")
+    print(f"  DECAY: {r['decay']}")
+    print(f"\n  RECOMMENDED DECISIONS:");[print(f"    - {d}")for d in r['recommended_decisions']]
+    print(SEP)
+
+def decision_packet_cmd(decision_id):
+    r=decision_packet(decision_id)
+    if not r:print(f"  Decision '{decision_id}' not found.");return
+    print(f"\n  DECISION PACKET: {r['decision']}");print(SEP)
+    for k,v in r.items():
+        if k=="decision":continue
+        print(f"  {k.upper()}: {v}")
+    print(SEP)
+
+def command_packet_cmd(command_id):
+    r=command_packet(command_id)
+    if not r:print(f"  Command '{command_id}' not found.");return
+    print(f"\n  COMMAND PACKET: {r['title']}");print(SEP)
+    for k,v in r.items():
+        if k=="title":continue
+        if isinstance(v,bool):v="YES" if v else "NO"
+        print(f"  {k.upper()}: {v}")
+    print(SEP)
+
+def premortem_cmd(entity_id):
+    r=premortem(entity_id)
+    print(f"\n  PRE-MORTEM: {r['entity']}");print(SEP)
+    print(f"  IMAGINE THIS FAILED. WHAT WENT WRONG?")
+    print(f"\n  FAILURE MODES:");[print(f"    - {f}")for f in r["failure_modes"]]
+    print(f"\n  EARLY WARNINGS:");[print(f"    - {w}")for w in r["early_warnings"]]
+    print(f"\n  PREVENTION:");[print(f"    - {p}")for p in r["prevention"]]
+    print(f"\n  CONTINGENCY: {r['contingency']}")
+    print(SEP)
+
+def postmortem_cmd(entity_id):
+    r=postmortem(entity_id)
+    print(f"\n  POST-MORTEM: {r['entity']}");print(SEP)
+    for k,v in r.items():
+        if k=="entity":continue
+        if isinstance(v,list):print(f"  {k.upper()}:");[print(f"    - {item}")for item in v]
+        else:print(f"  {k.replace('_',' ').upper()}: {v}")
+    print(SEP)
+
+def debt_list_cmd():
+    ds=load_strategic_debt()
+    if not ds:print("  No strategic debt. Use --add-debt.");return
+    print(f"\n  STRATEGIC DEBT ({len(ds)})");print(SEP)
+    for d in ds:print(f"  {d.debt_id}  [{d.debt_type}] {d.title[:45]}  interest:{d.interest_rate}  severity:{d.severity}")
+    print(SEP)
+
+def add_debt_cmd():
+    print("\n  ADD STRATEGIC DEBT");print("-"*40)
+    print("  Types:");[print(f"    {i+1}. {t}")for i,t in enumerate(DEBT_TYPES)]
+    try:dt=int(input("  Type (1-{0}): ".format(len(DEBT_TYPES))));dtype=DEBT_TYPES[dt-1]
+    except:dtype="admin_debt"
+    d=StrategicDebt(debt_id=uid(),title=input("  Title: ").strip(),debt_type=dtype,description=input("  Description: ").strip(),severity=int(input("  Severity (1-10): ").strip()or"5"),interest_rate=int(input("  Interest rate (1-10): ").strip()or"3"),created_date=today_str(),next_reduction_action=input("  Next reduction action: ").strip())
+    ds=load_strategic_debt();ds.append(d);save_strategic_debt(ds);print(f"  Debt '{d.title[:40]}' recorded.")
+
+def debt_review_cmd():
+    r=debt_review()
+    if r.get("message"):print(f"  {r['message']}");return
+    print(f"\n  STRATEGIC DEBT REVIEW");print(SEP);print(f"  {r['summary']}")
+    for d in r["highest_interest"]:print(f"    [{d['type']}] {d['title']} (interest:{d['interest']})")
+    print(SEP)
+
+def complexity_audit_cmd():
+    r=complexity_audit()
+    print(f"\n  COMPLEXITY AUDIT");print(SEP);print(f"  {r['summary']}")
+    for k,v in r.items():
+        if k in ("summary","warning"):continue
+        print(f"  {k.replace('_',' ')}: {v}")
+    print(SEP)
+
+def simplify_cmd():
+    r=simplify()
+    print(f"\n  SIMPLIFICATION RECOMMENDATIONS");print(SEP);print(f"  {r['summary']}")
+    for rec in r["recommendations"]:print(f"    - {rec}")
+    print(SEP)
+
+def os_health_cmd():
+    r=os_health()
+    print(f"\n  OPERATING SYSTEM HEALTH");print(SEP)
+    print(f"  Score: {r['os_health_score']}/100 ({r['status']})")
+    if r["strengths"]:print(f"  Strengths: {', '.join(r['strengths'])}")
+    if r["weaknesses"]:print(f"  Weaknesses: {', '.join(r['weaknesses'])}")
+    print(SEP)
+
+def autonomy_cmd():
+    a=load_autonomy()
+    print(f"\n  STRATEGIC AUTONOMY");print(SEP)
+    print(f"  Level: {a['level']} — {a['label']}")
+    print(f"  Max external actions: {a['max_external_actions']}")
+    print(f"  Approved for: {a['allowed_local_actions']}")
+    print(f"  Requires approval for: {a['require_approval_for']}")
+    print(SEP)
+
+def set_autonomy_cmd(level):
+    r=set_autonomy_level(level)
+    if r.get("error"):print(f"  Error: {r['error']}");return
+    print(f"  Autonomy set to Level {r['level']}: {r['label']}")
+
+def execute_approved_cmd():
+    print("\n  EXECUTING APPROVED COMMANDS...")
+    r=execute_approved()
+    print(f"  {r['summary']}")
+
+def ai_governance_review_cmd():
+    print(ai_governance_review_prompt())
+
+# ======================================================================
 # V6 — REVIEWS
 # ======================================================================
 def calibration_review_cmd():
@@ -2152,6 +2382,42 @@ def main():
     g.add_argument("--export-csv",type=str,metavar="STORE",help="Export store as CSV (metrics/projects/opportunities/impact/risks)")
     g.add_argument("--import-csv",type=str,metavar="STORE",help="Import CSV into store (requires --export for file path)")
     g.add_argument("--ai-performance-review",action="store_true",help="AI performance review prompt")
+    # V10 args
+    g.add_argument("--commands",action="store_true",help="List strategic command queue")
+    g.add_argument("--generate-commands",action="store_true",help="Generate commands from reviews")
+    g.add_argument("--approve-command",type=str,metavar="COMMAND_ID",help="Approve a command")
+    g.add_argument("--reject-command",type=str,metavar="COMMAND_ID",help="Reject a command")
+    g.add_argument("--command-review",action="store_true",help="Command queue review")
+    g.add_argument("--approvals",action="store_true",help="List approval records")
+    g.add_argument("--approval-review",action="store_true",help="Approval review")
+    g.add_argument("--policies",action="store_true",help="List strategic policies")
+    g.add_argument("--add-policy",action="store_true",help="Add strategic policy")
+    g.add_argument("--policy-review",action="store_true",help="Policy review")
+    g.add_argument("--conflict-review",action="store_true",help="Strategic conflict detection")
+    g.add_argument("--capacity",action="store_true",help="Show capacity model")
+    g.add_argument("--update-capacity",action="store_true",help="Update capacity model")
+    g.add_argument("--capacity-review",action="store_true",help="Capacity review")
+    g.add_argument("--initiatives",action="store_true",help="List strategic initiatives")
+    g.add_argument("--add-initiative",action="store_true",help="Create strategic initiative")
+    g.add_argument("--initiative-review",action="store_true",help="Initiative health review")
+    g.add_argument("--initiative",type=str,metavar="INITIATIVE_ID",help="View specific initiative")
+    g.add_argument("--governance-board",action="store_true",help="Governance board review")
+    g.add_argument("--decision-packet",type=str,metavar="DECISION_ID",help="Decision meeting packet")
+    g.add_argument("--command-packet",type=str,metavar="COMMAND_ID",help="Command execution packet")
+    g.add_argument("--premortem",type=str,metavar="PROJECT_ID",help="Pre-mortem analysis")
+    g.add_argument("--premortem-initiative",type=str,metavar="INITIATIVE_ID",help="Initiative pre-mortem")
+    g.add_argument("--postmortem",type=str,metavar="PROJECT_ID",help="Post-mortem analysis")
+    g.add_argument("--postmortem-initiative",type=str,metavar="INITIATIVE_ID",help="Initiative post-mortem")
+    g.add_argument("--debt",action="store_true",help="List strategic debt")
+    g.add_argument("--add-debt",action="store_true",help="Add strategic debt")
+    g.add_argument("--debt-review",action="store_true",help="Strategic debt review")
+    g.add_argument("--complexity-audit",action="store_true",help="System complexity audit")
+    g.add_argument("--simplify",action="store_true",help="Simplification recommendations")
+    g.add_argument("--os-health",action="store_true",help="Operating system health score")
+    g.add_argument("--autonomy",action="store_true",help="Show autonomy settings")
+    g.add_argument("--set-autonomy",type=str,metavar="LEVEL",help="Set autonomy level (0-4)")
+    g.add_argument("--execute-approved",action="store_true",help="Execute approved local commands")
+    g.add_argument("--ai-governance-review",action="store_true",help="AI governance review prompt")
     g.add_argument("--reflect",type=str,metavar="YYYY-MM-DD",help="End-of-day reflection")
     g.add_argument("--project",type=str,metavar="PROJECT_ID",help="Project detail")
     p.add_argument("--json",action="store_true",help="Clean JSON output")
@@ -2296,6 +2562,40 @@ def main():
     if args.export_csv: export_csv_cmd(args.export_csv); return
     if args.import_csv: import_csv_cmd(args.import_csv, args.export or ""); return
     if args.ai_performance_review: ai_performance_review_cmd(); return
+    # V10 dispatch
+    if args.commands or args.command_review: command_review_cmd() if args.command_review else commands_cmd(); return
+    if args.generate_commands: generate_commands_cmd(); return
+    if args.approve_command: approve_command_cmd(args.approve_command); return
+    if args.reject_command: reject_command_cmd(args.reject_command); return
+    if args.approvals or args.approval_review: approvals_cmd(); return
+    if args.policies: policies_cmd(); return
+    if args.add_policy: add_policy_cmd(); return
+    if args.policy_review: policy_review_cmd(); return
+    if args.conflict_review: conflict_review_cmd(); return
+    if args.capacity: capacity_cmd(); return
+    if args.update_capacity: update_capacity_cmd(); return
+    if args.capacity_review: capacity_review_cmd(); return
+    if args.initiatives: initiatives_cmd(); return
+    if args.add_initiative: add_initiative_cmd(); return
+    if args.initiative_review: initiative_review_cmd(); return
+    if args.initiative: print(f"  Initiative: {args.initiative}"); return
+    if args.governance_board: governance_board_cmd(); return
+    if args.decision_packet: decision_packet_cmd(args.decision_packet); return
+    if args.command_packet: command_packet_cmd(args.command_packet); return
+    if args.premortem: premortem_cmd(args.premortem); return
+    if args.premortem_initiative: premortem_cmd(args.premortem_initiative); return
+    if args.postmortem: postmortem_cmd(args.postmortem); return
+    if args.postmortem_initiative: postmortem_cmd(args.postmortem_initiative); return
+    if args.debt: debt_list_cmd(); return
+    if args.add_debt: add_debt_cmd(); return
+    if args.debt_review: debt_review_cmd(); return
+    if args.complexity_audit: complexity_audit_cmd(); return
+    if args.simplify: simplify_cmd(); return
+    if args.os_health: os_health_cmd(); return
+    if args.autonomy: autonomy_cmd(); return
+    if args.set_autonomy: set_autonomy_cmd(args.set_autonomy); return
+    if args.execute_approved: execute_approved_cmd(); return
+    if args.ai_governance_review: ai_governance_review_cmd(); return
     if args.dashboard: dashboard(); return
     if args.monthly_review: monthly_review(days=args.days); return
     if args.weekly_review: weekly_review(days=args.days); return
